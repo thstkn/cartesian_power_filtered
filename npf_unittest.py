@@ -63,10 +63,11 @@ class TestNdimPermuteFiltered(unittest.TestCase):
         verbose1 = 0
         
         # parameters for testing filtering
-        dimensional_filterlist_list = [ [ [[], []], [[0],[]], [[0],[3,4,5]] ],
-                                        [ [[0,1],[2],[]], [[0,1],[2],[3,4,5]], [[],[],[]] ],
-                                        [ [[0],[],[1,2],[3,4,5]], [[0],[1],[1,2],[3,4,5]] ],
-                                        [ [[0],[],[],[1,2],[3,4,5]], [[0],[4],[5],[1,2],[3,4,5]] ] ]
+        dfll =  [ [ [[], []], [[0],[]], [[0],[3,4,5]] ],
+                  [ [[0,1],[2],[]], [[0,1],[2],[3,4,5]], [[],[],[]] ],
+                  [ [[0],[],[1,2],[3,4,5]], [[0],[1],[1,2],[3,4,5]] ],
+                  [ [[0],[],[],[1,2],[3,4,5]], [[],[4],[5],[1,2],[]] ] ]
+        dimensional_filterlist_list = dfll
         returnwhich_list = ['filtered', 'unfiltered']
         filtermode_list = ['loose', 'strict']
         flattened2 = False

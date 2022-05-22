@@ -141,46 +141,7 @@ def ndimensional_filter(data_list: list,
     filter_dimensions = len(dimensional_filterlist)
     first_init = True
 
-    if filtermode == 'loose':
-        for data_sub_list in data_list:
-            filtered_sub_list = []
-            unfiltered_sub_list = []
-
-            for perm_index, perm in enumerate(data_sub_list):
-                filtered = False
-
-                for dimension, filter_values in enumerate(dimensional_filterlist):
-                    
-                    # go to next dimension if filter is empty
-                    if filter_values == []:
-                        continue
-
-                    # go to next dimension perm[dimension] is in filter
-                    elif filter_values != [] and perm[dimension] in filter_values:
-                        break
-                    
-                    # append perm[dimension] to unfiltered_sub if not in filter
-                    # and break
-                    elif filter_values != [] and perm[dimension] not in filter_values:
-                        unfiltered_sub_list.append(perm)
-                        unfiltered = True
-                        break
-                    
-                # if perm hasnt been unfiltered, append to filtered_sub_list 
-                if not unfiltered:
-                    filtered_sub_list.append(perm)
-                        
-            # only append sublists if they are not empty
-            if filtered_sub_list != []:
-                filtered_list.append(filtered_sub_list)
-            if unfiltered_sub_list != []:
-                unfiltered_list.append(unfiltered_sub_list)
-
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}')
-
-
-    elif filtermode == 'broken old loose filter':
+    if filtermode == 'broken old loose filter':
         for dimension, filter_values in enumerate(dimensional_filterlist):
             # only if filter isnt empty
             if filter_values != []:
@@ -253,45 +214,6 @@ def ndimensional_filter(data_list: list,
             first_init = False
 
     
-    elif filtermode == 'strict':
-        for data_sub_list in data_list:
-            filtered_sub_list = []
-            unfiltered_sub_list = []
-
-            for perm_index, perm in enumerate(data_sub_list):
-                unfiltered = False
-
-                for dimension, filter_values in enumerate(dimensional_filterlist):
-                    
-                    # go to next dimension if filter is empty
-                    if filter_values == []:
-                        continue
-
-                    # go to next dimension perm[dimension] is in filter
-                    elif filter_values != [] and perm[dimension] in filter_values:
-                        continue
-                    
-                    # append perm[dimension] to unfiltered_sub if not in filter
-                    # and break
-                    elif filter_values != [] and perm[dimension] not in filter_values:
-                        unfiltered_sub_list.append(perm)
-                        unfiltered = True
-                        break
-                    
-                # if perm hasnt been unfiltered, append to filtered_sub_list 
-                if not unfiltered:
-                    filtered_sub_list.append(perm)
-                        
-            # only append sublists if they are not empty
-            if filtered_sub_list != []:
-                filtered_list.append(filtered_sub_list)
-            if unfiltered_sub_list != []:
-                unfiltered_list.append(unfiltered_sub_list)
-
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}'
-                f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
-
     elif filtermode == 'broken old strict filter':
         for dimension, filter_values in enumerate(dimensional_filterlist):
             filter = None
