@@ -54,6 +54,8 @@ class TestNdimPermuteFiltered(unittest.TestCase):
 
 
     def test_ndim_filter(self):
+        verbose = True
+        if verbose: print()
         # paramers for generating testable permutation_lists
         to_permute = [0, 1, 2, 3, 4]
         dimensions_list = [2, 3, 4, 5]
@@ -84,12 +86,11 @@ class TestNdimPermuteFiltered(unittest.TestCase):
 
                     # only use filterlists with correct dimensionalities
                     for dimensional_filterlist in dimensional_filterlist_list[dimensions -2]:
-                        print(f'{len(dimensional_filterlist)}-dim filter = {dimensional_filterlist}')
+                        if verbose:
+                            print(f'{len(dimensional_filterlist)}-dim filter = {dimensional_filterlist}')
 
                         for returnwhich in returnwhich_list:
                             for filtermode in filtermode_list:
-
-                                
                                 
                                 result_ndim_filter = npf.ndimensional_filter(to_filter, dimensional_filterlist, returnwhich, filtermode, flattened2, verbose2)
                                 result_ndim_filter_length = len(npf.flatten_list(result_ndim_filter))
@@ -161,8 +162,6 @@ class TestNdimPermuteFiltered(unittest.TestCase):
                                         # filtered and unfiltered lists lengths should always sum up to the length of the original list
                                         length_sum = result_ndim_filter_length + len(npf.flatten_list(opposite))
                                         self.assertEqual(length_sum, to_filter_length)
-
-
 
 
 if __name__ == '__main__':

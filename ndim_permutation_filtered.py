@@ -155,20 +155,16 @@ def ndimensional_filter(data_list: list,
                     if filter_values == []:
                         continue
 
-                    # go to next dimension perm[dimension] is in filter
-                    elif filter_values != [] and perm[dimension] in filter_values:
-                        break
-                    
-                    # append perm[dimension] to unfiltered_sub if not in filter
+                    # append perm[dimension] to filtered_sub if it is in filter
                     # and break
-                    elif filter_values != [] and perm[dimension] not in filter_values:
-                        unfiltered_sub_list.append(perm)
-                        unfiltered = True
+                    elif filter_values != [] and perm[dimension] in filter_values:
+                        filtered_sub_list.append(perm)
+                        filtered = True
                         break
                     
                 # if perm hasnt been unfiltered, append to filtered_sub_list 
-                if not unfiltered:
-                    filtered_sub_list.append(perm)
+                if not filtered:
+                    unfiltered_sub_list.append(perm)
                         
             # only append sublists if they are not empty
             if filtered_sub_list != []:
@@ -178,79 +174,6 @@ def ndimensional_filter(data_list: list,
 
             if verbose > 0:
                 print(f'filtered: {len(flatten_list(filtered_list))}')
-
-
-    elif filtermode == 'broken old loose filter':
-        for dimension, filter_values in enumerate(dimensional_filterlist):
-            # only if filter isnt empty
-            if filter_values != []:
-
-                for filter_index, filter in enumerate(filter_values):
-                    # iterating over permuted_list
-                    for data_sub_list in data_list: 
-                        if verbose > 1:
-                            print(f'{data_sub_list = }\n')
-                        filtered_sub_list = []
-                        unfiltered_sub_list = []
-
-                        for perm_index, perm in enumerate(data_sub_list):
-                            # if filter values DOES match perm[dimension]
-                            # append permutation to filtered_sub_list
-                            if filter == perm[dimension] and perm not in filtered_sub_list and perm not in flatten_list(filtered_list):
-                                filtered_sub_list.append(perm)
-                                if print_param > perm_index and verbose > 1:
-                                    print(f'filtered: {perm = }')
-                                    if print_param-1 == perm_index:
-                                        print('\n')
-
-                            # if filter values DOES NOT match perm[dimension]
-                            # append permutation to unfiltered_sub_list
-                            elif filter != perm[dimension] and perm not in unfiltered_sub_list and perm not in flatten_list(unfiltered_list) and perm not in filtered_sub_list and perm not in flatten_list(filtered_list):
-                                unfiltered_sub_list.append(perm)
-                                if print_param > perm_index and verbose > 1:
-                                    print(f'unfiltered: {perm = }')
-                                    if print_param-1 == perm_index:
-                                        print('\n')
-
-                        if filtered_sub_list != []:
-                            filtered_list.append(filtered_sub_list)
-                        if unfiltered_sub_list != []:
-                            unfiltered_list.append(unfiltered_sub_list)
-
-                        # try deleting all filtered permutations from 
-                        # unfiltered_list
-                        for perm in filtered_sub_list:
-                            for sublist in unfiltered_list:
-                                try:
-                                    sublist.remove(perm)
-                                except:
-                                    pass
-                                # clean up possible empty sublists
-                                if sublist == []:
-                                    unfiltered_list.remove(sublist)
-
-                        if verbose > 1:
-                            print(f'\n{filtered_list = }\n{unfiltered_list = }'
-                            '\n')
-
-                    data_list = unfiltered_list
-
-                    if verbose > 0:
-                        print(f'filtered: {len(flatten_list(filtered_list))}'
-                        f'\tunfiltered: {len(flatten_list(unfiltered_list))}\t'
-                        f'{dimension = }\t{filter_values = }\tactive filter: '
-                        '{filter}\n')
-                        
-            elif filter_values == [] and not first_init:
-                filtered_list = data_list
-
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}'
-                f'\tunfiltered: {len(flatten_list(unfiltered_list))}\t'
-                f'{dimension = }\t{filter_values = }') 
-            
-            
-            first_init = False
 
     
     elif filtermode == 'strict':
@@ -267,7 +190,7 @@ def ndimensional_filter(data_list: list,
                     if filter_values == []:
                         continue
 
-                    # go to next dimension perm[dimension] is in filter
+                    # go to next dimension if perm[dimension] is in filter
                     elif filter_values != [] and perm[dimension] in filter_values:
                         continue
                     
@@ -291,103 +214,6 @@ def ndimensional_filter(data_list: list,
             if verbose > 0:
                 print(f'filtered: {len(flatten_list(filtered_list))}'
                 f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
-
-    elif filtermode == 'broken old strict filter':
-        for dimension, filter_values in enumerate(dimensional_filterlist):
-            filter = None
-
-            for filter_index, filter in enumerate(filter_values):
-
-                for data_sub_list in data_list:
-                    if verbose > 1:
-                        print(f'{data_sub_list[:print_param] = }\n')
-                    filtered_sub_list = []
-                    unfiltered_sub_list = []
-                    # permutations to be removed from filtered_list if found to
-                    # be illegal when cheking later filter values
-                    late_illegals = []
-
-                    for perm_index, perm in enumerate(data_sub_list):
-                        permutation_is_legal = False
-
-                        # if filter value DOES NOT match perm[dimension],
-                        # permutation is illegal. if not yet in any list append
-                        # permutation to unfiltered_sub_list
-                        if perm[dimension] != filter and perm not in flatten_list(unfiltered_list) and perm not in flatten_list(filtered_list) and perm not in unfiltered_sub_list and perm not in filtered_sub_list:
-                            unfiltered_sub_list.append(perm)
-                            if print_param > perm_index and verbose > 2:
-                                print(f'unfiltered: {perm = }')
-
-                        # if filter value DOES match perm[dimension],
-                        # permutation is legal. if not yet in any filtered_list
-                        # append to filtered_sub_list
-                        elif perm[dimension] == filter and perm not in flatten_list(filtered_list) and perm not in filtered_sub_list:
-                            filtered_sub_list.append(perm)
-                            if print_param > perm_index and verbose > 2:
-                                print(f'filtered: {perm = }')
-
-                        # if filter value DOES NOT match perm[dimension],
-                        # permutation is illegal. if not first dimension and
-                        # perm in filtered_list check for legal possibilities
-                        # of other filters in this dimension
-                        if perm[dimension] != filter and dimension != 0 and perm in flatten_list(filtered_list):
-
-                            if len(filter_values) > 1:
-
-                                for fil_index, fil in enumerate(filter_values):
-                                    if perm[dimension] == fil and filter_values[filter_index] != fil:
-                                        permutation_is_legal = True
-
-                            if permutation_is_legal == False:
-                                late_illegals.append(perm)
-                            if print_param > perm_index and verbose > 1:
-                                print(f'late_illegals: {perm = }')
-
-                    # add filtered items sublist to filtered_list
-                    if filtered_sub_list != []:
-                        filtered_list.append(filtered_sub_list)
-
-                    # try deleting all later illegals from filtered_list
-                    for perm in late_illegals:
-                        for sublist in filtered_list:
-                            try:
-                                if perm in sublist:
-                                    sublist.remove(perm)
-                                    unfiltered_sub_list.append(perm)
-                            except:
-                                pass
-
-                # try deleting all filtered permutations from unfiltered_list
-                    for perm in flatten_list(filtered_list):
-                        try:
-                            unfiltered_sub_list.remove(perm)
-                        except:
-                            pass
-                        for sublist in unfiltered_list:
-                            try:
-                                sublist.remove(perm)
-                            except:
-                                pass
-                            if sublist == []: # clean up possible empty sublists
-                                unfiltered_list.remove(sublist)
-
-                    # add unfiltered items sublist to unfiltered_list
-                    if unfiltered_sub_list != []:
-                        unfiltered_list.append(unfiltered_sub_list)
-
-                    if verbose > 2:
-                        print(f'\n{filtered_list = }\n{unfiltered_list = }\n')
-
-
-        # after all filters for one dimension are done, init data_list
-        # strictly with filtered permutations for next dimensions filters
-        if not filter_values == []:
-            data_list = filtered_list
-        # clean up possible empty sublists only after data_list has been
-        # initialized to not confuse iterating loops in filter
-        for sublist in filtered_list:
-            if sublist == []:                               
-                filtered_list.remove(sublist)
 
 
     if returnwhich == 'filtered':                    # which list to return
@@ -507,8 +333,8 @@ def main_permute():
     pf2 = ndimensional_permute_filtered(permlist=perm,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
-                                        filtermode='strict',
-                                        max_duplicates=2,
+                                        filtermode='loose',
+                                        max_duplicates=3,
                                         flattened=True,
                                         verbose=1,
                                         print_param=10)
