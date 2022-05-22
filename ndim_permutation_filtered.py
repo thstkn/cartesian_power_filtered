@@ -2,7 +2,6 @@
 
 
 import numpy as np
-import ..UTIL/general_util_1 as gu1
      
 from types import SimpleNamespace
 from matplotlib.pyplot import savefig
@@ -88,8 +87,8 @@ def ndimensional_permute(permlist: list, dimensions: int, max_duplicates:
         return flatten_list(permuted_list)          # flatten nested lists
 
 
-def ndimensional_filter(data_list: List, dimensional_filterlist: List[List], returnwhich: str = 'filtered', filtermode: str = 'loose',
-                        flattened: bool = False, verbose: int = 0, print_param: int = 3) -> List:
+def ndimensional_filter(data_list: list, dimensional_filterlist: list[list], returnwhich: str = 'filtered', filtermode: str = 'loose',
+                        flattened: bool = False, verbose: int = 0, print_param: int = 3) -> list:
     ''' Filtering n-dimensional data lists by items in dimensional_filterlist sublists. Returning filtered n-dimensional data as list
     data_list: list of n-dimensional data tuples.
     dimensional_filterlist: n-dimensional list of lists of items to filter out. format is [[dimension 1], [dimension 2], ...].
@@ -287,8 +286,8 @@ def ndimensional_filter(data_list: List, dimensional_filterlist: List[List], ret
         return flatten_list(data_list)  # flatten nested lists
 
 
-def ndimensional_permute_filtered(permlist: List, dimensional_filterlist: List[List], returnwhich: str = 'filtered', filtermode: str = 'loose',
-                                  max_duplicates: int = 0, flattened: bool = False, verbose: int = 0, print_param: int = 3) -> List:
+def ndimensional_permute_filtered(permlist: list, dimensional_filterlist: list[list], returnwhich: str = 'filtered', filtermode: str = 'loose',
+                                  max_duplicates: int = 0, flattened: bool = False, verbose: int = 0, print_param: int = 3) -> list:
     ''' Function for permuting entries of permlist, filtering out entries in filterlist-lists. filterlist needs to be set with empty
     lists to dictate dimensionality of permutation.
     permlist: list of entries to permute.
