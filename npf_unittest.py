@@ -3,7 +3,7 @@
 import unittest
 import ndim_permutation_filtered as npf
 
-class TestNdimPermutFiltered(unittest.TestCase):
+class TestNdimPermuteFiltered(unittest.TestCase):
 
     def test_flatten_list(self):
         to_flatten = [[[0, 1, 2], [3, 4, 5], [6, 7, 8]], [[],[1,2,3],[4,5,6]],
