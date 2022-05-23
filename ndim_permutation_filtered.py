@@ -227,6 +227,10 @@ def ndimensional_filter(data_list: list,
         data_list = filtered_list
     elif returnwhich == 'unfiltered' and not empty_filter:
         data_list = unfiltered_list
+    elif returnwhich == 'filtered' and empty_filter:
+        data_list = data_list
+    elif returnwhich == 'unfiltered' and empty_filter:
+        data_list = []
 
     if not empty_filter:
         for perm in filtered_list:                       # sanity check
