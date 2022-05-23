@@ -1,9 +1,12 @@
 #%%
 
 ### only needed for timing decorator ###
-import sys
-sys.path.append('..')
-from UTIL import general_util_1 as gu1
+if __name__ == '__main__':
+    import sys
+    sys.path.append('..')
+    from _usable_util import general_util_1 as gu1
+    timer = gu1.timerdecorator()
+else: timer = None
 ########################################
     
 
@@ -140,8 +143,13 @@ def ndimensional_filter(data_list: list,
     unfiltered_list = []
     filter_dimensions = len(dimensional_filterlist)
     first_init = True
+    empty_filter = True
+    
+    for f in dimensional_filterlist:
+        if f != []:
+            empty_filter = False
 
-    if filtermode == 'loose':
+    if filtermode == 'loose' and not empty_filter:
         for data_sub_list in data_list:
             filtered_sub_list = []
             unfiltered_sub_list = []
@@ -174,9 +182,8 @@ def ndimensional_filter(data_list: list,
 
             if verbose > 0:
                 print(f'filtered: {len(flatten_list(filtered_list))}')
-
     
-    elif filtermode == 'strict':
+    elif filtermode == 'strict' and not empty_filter:
         for data_sub_list in data_list:
             filtered_sub_list = []
             unfiltered_sub_list = []
@@ -216,19 +223,20 @@ def ndimensional_filter(data_list: list,
                 f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
 
 
-    if returnwhich == 'filtered':                    # which list to return
+    if returnwhich == 'filtered' and not empty_filter: # which list to return
         data_list = filtered_list
-    elif returnwhich == 'unfiltered':
+    elif returnwhich == 'unfiltered' and not empty_filter:
         data_list = unfiltered_list
 
-    for perm in filtered_list:                       # sanity check
-        if perm in unfiltered_list and verbose > 0:
-            print(f'Error in ndimensional_filter: {perm = } has been filtered '
-                    'and unfiltered.')
-    for perm in unfiltered_list:
-        if perm in filtered_list and verbose > 0:
-            print(f'Error in ndimensional_filter: {perm = } has been filtered '
-                    'and unfiltered.')
+    if not empty_filter:
+        for perm in filtered_list:                       # sanity check
+            if perm in unfiltered_list and verbose > 0:
+                print(f'Error in ndimensional_filter: {perm = } has been filtered '
+                        'and unfiltered.')
+        for perm in unfiltered_list:
+            if perm in filtered_list and verbose > 0:
+                print(f'Error in ndimensional_filter: {perm = } has been filtered '
+                        'and unfiltered.')
 
     if not flattened:
         return data_list
@@ -314,7 +322,7 @@ def ndimensional_permute_filtered(permlist: list,
         return flatten_list(permuted_filtered_list)  # flatten nested lists
 
 
-@gu1.timerdecorator(4, 's')
+#@gu1.timerdecorator(4, 's')
 def main_permute():
     #perm = ['Paul', 'Basti', 'Merle', 'Kim', 'Jonas', 'Lennard']
     #perm = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
@@ -329,6 +337,7 @@ def main_permute():
     filter_list = [[],[],['A','B','C','D','E','F'],['A','B','C','D','E','F']]
     
     filter_list = [[0],[0,1],[0,1,2],[]]
+    filter_list = [[],[]]
     
     pf2 = ndimensional_permute_filtered(permlist=perm,
                                         dimensional_filterlist=filter_list,
