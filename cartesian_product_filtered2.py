@@ -1,3 +1,4 @@
+
 #%%
 
 ### only needed for timing decorator ###
@@ -9,14 +10,20 @@ if __name__ == '__main__':
 else: timer = None
 ########################################
     
+import itertools as it
+import scipy.special as sp
 
-def flatten_list(list_of_lists: list[list]) -> list:
-    return [item for sublist in list_of_lists for item in sublist]
+
+def flatten_list(list_of_iterable: list[list]) -> list:
+    return [item for sublist in list_of_iterable for item in sublist]
 
 
-def ndimensional_permute(permlist: list, dimensions: int, max_duplicates: 
-    int = 0, flattened: bool = False, verbose: int = 0) -> list:
-    '''Function for n-dimensional permuting all entries of permlist.
+def ndimensional_product(prodlist: list, dimensions: int, max_duplicates: 
+    int = 0, verbose: int = 0) -> list[tuple]:
+    '''
+    Function for n-dimensional permuting all entries of permlist and filtering
+        resulting tuples by amount of duplicates of their elements. Returns a
+        list of tuples.
     permlist: list of entries to permute, takes any datatypes.
     dimensions: number of dimensions to permute itmes from permlist to.
     max_duplicates: if set to a number > 0, permutations which contain more
@@ -25,75 +32,41 @@ def ndimensional_permute(permlist: list, dimensions: int, max_duplicates:
     flattened: if True, returns a flattened list of permuted entries.
     verbose: 0 for no printouts, 1 for printouts, 2 for all printouts
     '''
-    # -2 because dimensions dictates permutation while loop and initialized
-    # permuted_list is already 2D
-    loop_condition = dimensions - 2
-    dim = 2
-    # init permuted list with 2D permutation
-    permuted_list = [[[y, x] for x in permlist] for y in permlist]
-    # count keeping track of filtered permutations by duplicates
-    counter = 0
-    filtered_permuted_list = []
 
-    # n-dimensional permuting #
-    while loop_condition > 0:
-        permuted_list = flatten_list(permuted_list)
-        permuted_list = [[[y, *x] for x in permuted_list] for y in permlist]
-        loop_condition -= 1
-        dim += 1
-        if verbose > 0:
-            print(f'ndim_permute says:\tdimensions = {dim}\t{max_duplicates = }'
-                    f'\t{len(flatten_list(permuted_list)) = }\n')
+    if verbose > 0:
+        print(f'ndim_permute says:\t{dimensions = }\t{max_duplicates = }\t'
+                f'{len(flatten_list(cartesian_product_gen)) = }\n')
 
-    if dimensions - 2 < 1 and verbose > 0:
-        print(f'ndim_permute says:\tdimensions = {dim}\t{max_duplicates = }\t'
-                f'{len(flatten_list(permuted_list)) = }\n')
+    cartesian_product_gen = it.product(prodlist, repeat=dimensions)
+    orig_len = len(prodlist) ** dimensions
 
-    orig_len = len(flatten_list(permuted_list))
-
+    filtered_list = []
+    removed_items = 0
     # filtering out permutations with more than max_duplicates of the same item
     # in a given permutation
     if max_duplicates > 0:
-        for sublist in permuted_list:
-            filtered_permuted_sub_list = []
+        for i in range(len(cartesian_product_gen)):
+            # correction for removed duplicates in index of permuted_list
+            perm = cartesian_product_gen[i - removed_items]
 
-            for i in range(len(sublist)):
-                # correction for removed duplicates in index of sublist
-                perm = sublist[i - counter]
-                # for each item check if permutation contains more than
-                # max_duplicates of the same item
-                for item in perm:
-                    if not perm.count(item) <= max_duplicates:
-                        sublist.remove(perm)
-                        if verbose > 2:
-                            print(f'{perm = }\t\t{item = }')
-                        counter += 1
-                        break
+            # for each item check if permutation contains more than
+            # max_duplicates of the same item
+            for item in perm:
+                if perm.count(item) > max_duplicates:
+                    cartesian_product_gen.remove(perm)
+                    removed_items += 1
+                    if verbose > 2:
+                        print(f'{perm = }\t\t{item = }')
+                    break
+                else:
+                    filtered_list.append(perm)
 
-            # reinitialize counter to zero after each sublist
-            counter = 0
-            # only after all permutations from sublist have been filtered, add
-            # sublist to filtered_permuted_list
-            filtered_permuted_sub_list = sublist
-            if verbose > 2:
-                print(f'{filtered_permuted_sub_list = }')
-            elif verbose > 1:
-                print(f'{filtered_permuted_sub_list[:10] = }')
-
-            if filtered_permuted_sub_list != []:
-                filtered_permuted_list.append(filtered_permuted_sub_list)
-
-        permuted_list = filtered_permuted_list
-
-    leftovers = orig_len - len(flatten_list(permuted_list))
+    leftovers = orig_len - len(filtered_list)
     if verbose > 0:
-        print(f'filtered {leftovers} permutations of {orig_len} containing '
+        print(f'filtered out {leftovers} permutations of {orig_len} containing '
                 f'more than {max_duplicates} duplicates\n')
 
-    if not flattened:
-        return permuted_list                        # not flattened
-    else:
-        return flatten_list(permuted_list)          # flatten nested lists
+    return filtered_list
 
 
 def ndimensional_filter(data_list: list,
@@ -103,7 +76,8 @@ def ndimensional_filter(data_list: list,
                         flattened: bool = False,
                         verbose: int = 0,
                         print_param: int = 3) -> list:
-    ''' Filtering n-dimensional data lists by items in dimensional_filterlist
+    '''
+    Filtering n-dimensional data lists by items in dimensional_filterlist
     sublists. Returning filtered n-dimensional data as list
     data_list: list of n-dimensional data tuples.
     dimensional_filterlist: n-dimensional list of lists of items to filter out.
@@ -248,7 +222,7 @@ def ndimensional_filter(data_list: list,
         return flatten_list(data_list)  # flatten nested lists
 
 
-def ndimensional_permute_filtered(permlist: list,
+def cartesian_product_filtered(prodlist: list,
                                     dimensional_filterlist: list[list],
                                     returnwhich: str = 'filtered',
                                     filtermode: str = 'loose',
@@ -299,10 +273,9 @@ def ndimensional_permute_filtered(permlist: list,
                 '"loose"')
 
     # permuting, flattened needs to be False here #
-    permuted_list = ndimensional_permute(permlist=permlist,
+    permuted_list = ndimensional_product(prodlist=prodlist,
                                 dimensions=dimensions,
                                 max_duplicates=max_duplicates,
-                                flattened=False,
                                 verbose=verbose)
 
     if verbose > 2:
@@ -316,7 +289,6 @@ def ndimensional_permute_filtered(permlist: list,
                                 dimensional_filterlist=dimensional_filterlist, 
                                 returnwhich=returnwhich,
                                 filtermode=filtermode,
-                                flattened=False,
                                 verbose=verbose,
                                 print_param=print_param)
 
@@ -343,7 +315,7 @@ def main_permute():
     filter_list = [[0],[0,1],[0,1,2],[]]
     filter_list = [[],[]]
     
-    pf2 = ndimensional_permute_filtered(permlist=perm,
+    pf2 = cartesian_product_filtered(prodlist=perm,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
                                         filtermode='loose',
