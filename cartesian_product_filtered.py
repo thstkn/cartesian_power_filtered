@@ -9,11 +9,15 @@ if __name__ == '__main__':
 else: timer = None
 ########################################
     
+#import sys
+#sys.path.append('..')
+#from _usable_util import general_util_1 as gu1
 
 def flatten_list(list_of_iterable: list[list]) -> list:
     return [item for sublist in list_of_iterable for item in sublist]
 
 
+#@gu1.timerdecorator(2, 'ms')
 def ndimensional_product(permlist: list, dimensions: int, max_duplicates: 
     int = 0, flattened: bool = False, verbose: int = 0) -> list:
     '''Function for n-dimensional permuting all entries of permlist.
@@ -96,6 +100,7 @@ def ndimensional_product(permlist: list, dimensions: int, max_duplicates:
         return flatten_list(permuted_list)          # flatten nested lists
 
 
+#@gu1.timerdecorator(2, 'ms')
 def ndimensional_filter(data_list: list,
                         dimensional_filterlist: list[list],
                         returnwhich: str = 'filtered',
@@ -180,8 +185,9 @@ def ndimensional_filter(data_list: list,
             if unfiltered_sub_list != []:
                 unfiltered_list.append(unfiltered_sub_list)
 
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}')
+            if verbose > 1:
+                print(f'filtered: {len(flatten_list(filtered_list))}'
+                f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
     
     elif filtermode == 'strict' and not empty_filter:
         for data_sub_list in data_list:
@@ -218,7 +224,7 @@ def ndimensional_filter(data_list: list,
             if unfiltered_sub_list != []:
                 unfiltered_list.append(unfiltered_sub_list)
 
-            if verbose > 0:
+            if verbose > 1:
                 print(f'filtered: {len(flatten_list(filtered_list))}'
                 f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
 

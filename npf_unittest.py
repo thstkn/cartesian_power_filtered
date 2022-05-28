@@ -1,7 +1,7 @@
 # unittest general util 1
 
 import unittest
-import ndim_permutation_filtered as npf
+import cartesian_product_filtered2 as cpf
 
 class TestNdimPermuteFiltered(unittest.TestCase):
 
@@ -15,7 +15,7 @@ class TestNdimPermuteFiltered(unittest.TestCase):
                 # add up items count of all sublists
                 count += len(sublist)
 
-            flattened = npf.flatten_list(list)
+            flattened = cpf.flatten_list(list)
             # check if length of flattened list equals sum of count
             self.assertEqual(len(flattened), count)
             # reinitialize counter after each list
@@ -36,8 +36,8 @@ class TestNdimPermuteFiltered(unittest.TestCase):
 
                 if max_duplicates <= dimensions:
                     
-                    result_ndim_permute = npf.ndimensional_permute(to_permute, dimensions, max_duplicates, flattened, verbose)
-                    unfiltered_result_length = len(npf.flatten_list(result_ndim_permute))
+                    result_ndim_permute = cpf.ndimensional_permute(to_permute, dimensions, max_duplicates, flattened, verbose)
+                    unfiltered_result_length = len(cpf.flatten_list(result_ndim_permute))
                     # length of permuted equals n(permuted elements) to the power of n(dimensions) if not filtered
                     if max_duplicates == 0: 
                         self.assertEqual(unfiltered_result_length, len(to_permute) ** dimensions)
@@ -81,8 +81,8 @@ class TestNdimPermuteFiltered(unittest.TestCase):
 
                 if max_duplicates <= dimensions:
                     
-                    to_filter = npf.ndimensional_permute(to_permute, dimensions, max_duplicates, flattened1, verbose1)
-                    to_filter_length = len(npf.flatten_list(to_filter))
+                    to_filter = cpf.ndimensional_permute(to_permute, dimensions, max_duplicates, flattened1, verbose1)
+                    to_filter_length = len(cpf.flatten_list(to_filter))
 
                     # only use filterlists with correct dimensionalities
                     for dimensional_filterlist in dimensional_filterlist_list[dimensions -2]:
@@ -92,8 +92,8 @@ class TestNdimPermuteFiltered(unittest.TestCase):
                         for returnwhich in returnwhich_list:
                             for filtermode in filtermode_list:
                                 
-                                result_ndim_filter = npf.ndimensional_filter(to_filter, dimensional_filterlist, returnwhich, filtermode, flattened2, verbose2)
-                                result_ndim_filter_length = len(npf.flatten_list(result_ndim_filter))
+                                result_ndim_filter = cpf.ndimensional_filter(to_filter, dimensional_filterlist, returnwhich, filtermode, flattened2, verbose2)
+                                result_ndim_filter_length = len(cpf.flatten_list(result_ndim_filter))
                                 
                                 for sublist_result_filter in result_ndim_filter:
                                     # check if possible empty sublists werent removed
@@ -102,7 +102,7 @@ class TestNdimPermuteFiltered(unittest.TestCase):
 
                                     if returnwhich == 'filtered' and filtermode == 'strict':
                                         # content of filtered cant be in unfiltered
-                                        opposite = (npf.ndimensional_filter(to_filter, dimensional_filterlist, 'unfiltered', filtermode, flattened2, verbose2))
+                                        opposite = (cpf.ndimensional_filter(to_filter, dimensional_filterlist, 'unfiltered', filtermode, flattened2, verbose2))
 
                                         for perm in sublist_result_filter:
                                             for opposite_sublist in opposite:
@@ -118,12 +118,12 @@ class TestNdimPermuteFiltered(unittest.TestCase):
                                                         # check for item not within filter at dimension i
                                                         self.assertNotIn(item, dimensional_filterlist[i])
                                         # filtered and unfiltered lists lengths should always sum up to the length of the original list
-                                        length_sum = result_ndim_filter_length + len(npf.flatten_list(opposite))
+                                        length_sum = result_ndim_filter_length + len(cpf.flatten_list(opposite))
                                         self.assertEqual(length_sum, to_filter_length)
 
                                     elif returnwhich == 'filtered' and filtermode == 'loose':
                                         # content of filtered cant be in unfiltered
-                                        opposite = (npf.ndimensional_filter(to_filter, dimensional_filterlist, 'unfiltered', filtermode, flattened2, verbose2))
+                                        opposite = (cpf.ndimensional_filter(to_filter, dimensional_filterlist, 'unfiltered', filtermode, flattened2, verbose2))
 
                                         for perm in sublist_result_filter:
                                             for opposite_sublist in opposite:
@@ -139,28 +139,28 @@ class TestNdimPermuteFiltered(unittest.TestCase):
                                                     break
                                             self.assertTrue(one_item_in_any_demension_in_filter)
                                         # filtered and unfiltered lists lengths should always sum up to the length of the original list
-                                        length_sum = result_ndim_filter_length + len(npf.flatten_list(opposite))
+                                        length_sum = result_ndim_filter_length + len(cpf.flatten_list(opposite))
                                         self.assertEqual(length_sum, to_filter_length)
                                               
 
                                     elif returnwhich == 'unfiltered' and filtermode == 'strict':
                                         # content of unfiltered cant be in filtered
-                                        opposite = (npf.ndimensional_filter(to_filter, dimensional_filterlist, 'filtered', filtermode, flattened2, verbose2))
+                                        opposite = (cpf.ndimensional_filter(to_filter, dimensional_filterlist, 'filtered', filtermode, flattened2, verbose2))
                                         for perm in sublist_result_filter:
                                             for opposite_sublist in opposite:
                                                 self.assertNotIn(perm, opposite_sublist)
                                         # filtered and unfiltered lists lengths should always sum up to the length of the original list
-                                        length_sum = result_ndim_filter_length + len(npf.flatten_list(opposite))
+                                        length_sum = result_ndim_filter_length + len(cpf.flatten_list(opposite))
                                         self.assertEqual(length_sum, to_filter_length)
 
                                     elif returnwhich == 'unfiltered' and filtermode == 'loose':
                                         # content of unfiltered cant be in filtered
-                                        opposite = (npf.ndimensional_filter(to_filter, dimensional_filterlist, 'filtered', filtermode, flattened2, verbose2))
+                                        opposite = (cpf.ndimensional_filter(to_filter, dimensional_filterlist, 'filtered', filtermode, flattened2, verbose2))
                                         for perm in sublist_result_filter:
                                             for opposite_sublist in opposite:
                                                 self.assertNotIn(perm, opposite_sublist)
                                         # filtered and unfiltered lists lengths should always sum up to the length of the original list
-                                        length_sum = result_ndim_filter_length + len(npf.flatten_list(opposite))
+                                        length_sum = result_ndim_filter_length + len(cpf.flatten_list(opposite))
                                         self.assertEqual(length_sum, to_filter_length)
 
 

@@ -10,16 +10,60 @@ if __name__ == '__main__':
 else: timer = None
 ########################################
     
-import itertools as it
-import scipy.special as sp
+from itertools import product
+from scipy.special import binom
+
+from functools import partial
+from multiprocessing import cpu_count, Pool, get_context, Pipe, Lock, Process, Queue
+
+import sys, os
+sys.path.append('..')
+from _usable_util import general_util_1 as gu1
 
 
 def flatten_list(list_of_iterable: list[list]) -> list:
     return [item for sublist in list_of_iterable for item in sublist]
 
+def chunker(to_split:list, chunksize:int) -> list:
+    chunked = [to_split[pos:pos + chunksize] for pos in \
+                                            range(0, len(to_split), chunksize)]
+    if None in chunked[-1]:
+        chunked[-1] = list(filter(None, chunked[-1]))
+    return chunked
+                                        
+def max_dup_filter(data_list: list[list], max_duplicates: int,
+                                        verbose: int=0) -> tuple[list, list]:
+    if verbose > 2:
+        print(f'{os.getpid() = }')
+    filtered_list = []
+    unfiltered_list = []
+    first = True
+    #for perm in next(cartesian_product_gen):
+    for combination in data_list:
+        illegal = False
+        # for each item check if permutation contains more than
+        # max_duplicates of the same item
+        for item in combination:
+            if first and verbose > 2:
+                print(f'{type(combination) = }\t{combination = }\t{item = }\t '
+                    f'{combination.count(item) = }')
+                first = False
 
-def ndimensional_product(prodlist: list, dimensions: int, max_duplicates: 
-    int = 0, verbose: int = 0) -> list[tuple]:
+            if combination.count(item) > max_duplicates:
+                illegal = True
+                unfiltered_list.append(combination)
+                if verbose > 2:
+                    print(f'{combination = }\t\t{item = }')
+                break
+        if not illegal:
+            filtered_list.append(combination)
+
+    return filtered_list, unfiltered_list
+
+
+#@gu1.timerdecorator(2, 'ms')
+def ndimensional_product(prodlist: list, dimensions: int, maxduplicates: 
+    int = 0, returnwhich:str = 'filtered', verbose: int = 0) -> list[tuple]:
     '''
     Function for n-dimensional permuting all entries of permlist and filtering
         resulting tuples by amount of duplicates of their elements. Returns a
@@ -33,49 +77,140 @@ def ndimensional_product(prodlist: list, dimensions: int, max_duplicates:
     verbose: 0 for no printouts, 1 for printouts, 2 for all printouts
     '''
 
-    if verbose > 0:
-        print(f'ndim_permute says:\t{dimensions = }\t{max_duplicates = }\t'
-                f'{len(flatten_list(cartesian_product_gen)) = }\n')
+    if returnwhich not in ['filtered', 'unfiltered']:
+        returnwhich = 'filtered'
+        print('returnwhich must be either "filtered" or "unfiltered". '
+                'defaulting to "filtered"')
+    if maxduplicates < 0:
+        maxduplicates = 0
 
-    cartesian_product_gen = it.product(prodlist, repeat=dimensions)
-    orig_len = len(prodlist) ** dimensions
-
+    combinations = len(prodlist) ** dimensions
+        
     filtered_list = []
-    removed_items = 0
-    # filtering out permutations with more than max_duplicates of the same item
-    # in a given permutation
-    if max_duplicates > 0:
-        for i in range(len(cartesian_product_gen)):
-            # correction for removed duplicates in index of permuted_list
-            perm = cartesian_product_gen[i - removed_items]
+    unfiltered_list = []
+    to_spawn = cpu_count()      # number of processes to spawn
 
-            # for each item check if permutation contains more than
-            # max_duplicates of the same item
-            for item in perm:
-                if perm.count(item) > max_duplicates:
-                    cartesian_product_gen.remove(perm)
-                    removed_items += 1
-                    if verbose > 2:
-                        print(f'{perm = }\t\t{item = }')
-                    break
-                else:
-                    filtered_list.append(perm)
+    multi_arr = None            # if threshold is reached, this list will be
+    multi_factor = 2            # used for chunked data. m_factor for adjustment
+    threshold = 50_000
+    count = 1                   # counter for automatic chunk sizes
 
-    leftovers = orig_len - len(filtered_list)
+    cart_prod_gen = product(prodlist, repeat=dimensions)
+
+    # following code determines chunks size from threshold
+    if combinations > threshold:
+        chunksneeded = cpu_count() * multi_factor * count
+        chunksize = combinations // chunksneeded + 1
+        while chunksize > threshold:
+            count += 1
+            chunksneeded = cpu_count() * multi_factor * count
+            chunksize = combinations // chunksneeded + 1
+
+        multi_arr = chunker(list(cart_prod_gen), chunksize)
+
     if verbose > 0:
-        print(f'filtered out {leftovers} permutations of {orig_len} containing '
-                f'more than {max_duplicates} duplicates\n')
+        print(f' ndim_product says:\t{dimensions = }\t{maxduplicates = }\t'
+                f'possible combinations: {combinations}')
+        if multi_arr is not None:
+                print(f' Chunks: {chunksneeded}\tChunksize: {chunksize}')
 
-    return filtered_list
+    if maxduplicates > 0 and multi_arr is None:
+        filtered_list, unfiltered_list = max_dup_filter(list(cart_prod_gen),
+                                                        maxduplicates, verbose)
+
+    elif maxduplicates > 0 and multi_arr is not None:
+        with get_context('spawn').Pool(processes=to_spawn) as pool:
+
+            multiresult = pool.starmap(max_dup_filter, [(multi_arr[i],
+                                        maxduplicates, verbose) for i in \
+                                        range(len(multi_arr))])
+            # arr[0] and [1] are filtered and unfiltered results, while each
+            # arr equals the result of a single chunk
+            for arr in multiresult:
+                filtered_list.extend(arr[0])
+                unfiltered_list.extend(arr[1])
+
+            if verbose > 1:
+                print(f'{len(multi_arr) = }\t{len(multiresult) = }\t'
+                    f'{len(multiresult[0]) = }\t{len(multiresult[0][0]) = }\t'
+                    f'{len(multiresult[0][0][0]) = }\t'
+                    f'{multiresult[0][0][0] = }\n')
+            
+    elif maxduplicates == 0:
+        filtered_list = [perm for perm in cart_prod_gen]
+
+    nfiltered = len(filtered_list)
+    nunfiltered = len(unfiltered_list)
+    if combinations != nfiltered + nunfiltered:
+        print(f'sanity check failed:\n{combinations = }\t{nfiltered = }\t '
+            f'{nunfiltered = }')
+    if verbose > 0 and maxduplicates > 0:
+        print(f'removed {nunfiltered} combinations of {combinations} '
+                f'containing more than {maxduplicates} duplicates\n')
+
+    if returnwhich == 'filtered':
+        return filtered_list
+    elif returnwhich == 'unfiltered':
+        return unfiltered_list
 
 
-def ndimensional_filter(data_list: list,
+def loose_filter(data:list, filter:list) -> tuple[list, list]:
+    filtered_list = []
+    unfiltered_list = []
+    for combination in data:
+        filtered = False
+
+        for dimension, filter_values in enumerate(filter):
+            # go to next dimension if filter is empty
+            if filter_values == []:
+                continue
+            # append perm to filtered_sub if it is in filter and break
+            elif filter_values != [] and \
+                combination[dimension] in filter_values:
+
+                filtered_list.append(combination)
+                filtered = True
+                break
+        # if perm hasnt been unfiltered, append to filtered_sub_list 
+        if not filtered:
+            unfiltered_list.append(combination)
+
+    return filtered_list, unfiltered_list
+
+def strict_filter(data:list, filter:list) -> tuple[list, list]:
+    filtered_list = []
+    unfiltered_list = []
+    for combination in data:
+        unfiltered = False
+
+        for dimension, filter_values in enumerate(filter):
+            # go to next dimension if filter is empty
+            if filter_values == []:
+                continue
+            # go to next dimension if perm[dimension] is in filter
+            elif filter_values != [] and \
+                combination[dimension] in filter_values:
+                continue
+            # append perm[dimension] to unfiltered_sub if not in filter
+            # and break
+            elif filter_values != [] and \
+                combination[dimension] not in filter_values:
+                unfiltered_list.append(combination)
+                unfiltered = True
+                break
+        # if perm hasnt been unfiltered, append to filtered_sub_list 
+        if not unfiltered:
+            filtered_list.append(combination)
+                    
+    return filtered_list, unfiltered_list
+
+#@gu1.timerdecorator(2, 'ms')
+def ndimensional_filter(data_list: list[tuple],
                         dimensional_filterlist: list[list],
                         returnwhich: str = 'filtered',
                         filtermode: str = 'loose',
-                        flattened: bool = False,
                         verbose: int = 0,
-                        print_param: int = 3) -> list:
+                        print_param: int = 3) -> list[tuple]:
     '''
     Filtering n-dimensional data lists by items in dimensional_filterlist
     sublists. Returning filtered n-dimensional data as list
@@ -99,6 +234,7 @@ def ndimensional_filter(data_list: list,
     print_param: int to dictate how many lines of printout should be generated
     from within loops. use 0 for infinite.
     '''
+
     if returnwhich not in ['filtered', 'unfiltered']:
         returnwhich = 'filtered'
         print('returnwhich must be either "filtered" or "unfiltered". '
@@ -108,94 +244,74 @@ def ndimensional_filter(data_list: list,
         print('returnwhich must be either "loose" or "strict". defaulting to '
                 '"loose"')
 
-    permutations_taken = len(flatten_list(data_list))
+    combinations = len(data_list)
     if verbose > 0:
-        print(f'ndim_filter says:\toverall number of permutations = '
-        f'{permutations_taken}\t{dimensional_filterlist = }\t{returnwhich = }'
-        f'\t{filtermode = }\tverbose level = {verbose}\t{print_param = }\n')
+        print(f' ndim_filter says:\treceived combinations = '
+        f'{combinations}\t{filtermode = }\t{returnwhich = }'
+        f'\n{dimensional_filterlist = }')
+
     filtered_list = []
     unfiltered_list = []
     filter_dimensions = len(dimensional_filterlist)
-    first_init = True
+    # if no filter is given in ANY dimension, return all permutations
     empty_filter = True
-    
     for f in dimensional_filterlist:
         if f != []:
             empty_filter = False
+            break
+
+    tospawn = cpu_count()      # number of processes to spawn
+
+    multi_arr = None            # if threshold is reached, multi_arr will be
+    multi_factor = 2            # used for chunked data. m_factor for adjustment
+    threshold = 100_000
+    count = 1                   # counter for automatic chunk sizes
+
+    # following code determines chunks size from threshold
+    if combinations > threshold:
+        chunksneeded = cpu_count() * multi_factor * count
+        chunksize = combinations // chunksneeded + 1
+        while chunksize > threshold:
+            count += 1
+            chunksneeded = cpu_count() * multi_factor * count
+            chunksize = combinations // chunksneeded + 1
+
+        multi_arr = chunker(list(data_list), chunksize)
 
     if filtermode == 'loose' and not empty_filter:
-        for data_sub_list in data_list:
-            filtered_sub_list = []
-            unfiltered_sub_list = []
+        if multi_arr is None:
+            res = loose_filter(data_list, dimensional_filterlist)
+            filtered_list, unfiltered_list = res
+        else:
+            with get_context('spawn').Pool(processes=tospawn) as pool:
 
-            for perm_index, perm in enumerate(data_sub_list):
-                filtered = False
-
-                for dimension, filter_values in enumerate(dimensional_filterlist):
-                    
-                    # go to next dimension if filter is empty
-                    if filter_values == []:
-                        continue
-
-                    # append perm[dimension] to filtered_sub if it is in filter
-                    # and break
-                    elif filter_values != [] and perm[dimension] in filter_values:
-                        filtered_sub_list.append(perm)
-                        filtered = True
-                        break
-                    
-                # if perm hasnt been unfiltered, append to filtered_sub_list 
-                if not filtered:
-                    unfiltered_sub_list.append(perm)
-                        
-            # only append sublists if they are not empty
-            if filtered_sub_list != []:
-                filtered_list.append(filtered_sub_list)
-            if unfiltered_sub_list != []:
-                unfiltered_list.append(unfiltered_sub_list)
-
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}')
+                multiresult = pool.starmap(loose_filter, [(multi_arr[i],
+                                            dimensional_filterlist) for i in \
+                                            range(len(multi_arr))])
+                # arr[0] and [1] are filtered and unfiltered results, while each
+                # arr equals the result of a single chunk
+                for arr in multiresult:
+                    filtered_list.extend(arr[0])
+                    unfiltered_list.extend(arr[1])
     
     elif filtermode == 'strict' and not empty_filter:
-        for data_sub_list in data_list:
-            filtered_sub_list = []
-            unfiltered_sub_list = []
+        if multi_arr is None:
+            res = strict_filter(data_list, dimensional_filterlist)
+            filtered_list, unfiltered_list = res
+        else:
+            with get_context('spawn').Pool(processes=tospawn) as pool:
 
-            for perm_index, perm in enumerate(data_sub_list):
-                unfiltered = False
-
-                for dimension, filter_values in enumerate(dimensional_filterlist):
-                    
-                    # go to next dimension if filter is empty
-                    if filter_values == []:
-                        continue
-
-                    # go to next dimension if perm[dimension] is in filter
-                    elif filter_values != [] and perm[dimension] in filter_values:
-                        continue
-                    
-                    # append perm[dimension] to unfiltered_sub if not in filter
-                    # and break
-                    elif filter_values != [] and perm[dimension] not in filter_values:
-                        unfiltered_sub_list.append(perm)
-                        unfiltered = True
-                        break
-                    
-                # if perm hasnt been unfiltered, append to filtered_sub_list 
-                if not unfiltered:
-                    filtered_sub_list.append(perm)
-                        
-            # only append sublists if they are not empty
-            if filtered_sub_list != []:
-                filtered_list.append(filtered_sub_list)
-            if unfiltered_sub_list != []:
-                unfiltered_list.append(unfiltered_sub_list)
-
-            if verbose > 0:
-                print(f'filtered: {len(flatten_list(filtered_list))}'
-                f'\tunfiltered: {len(flatten_list(unfiltered_list))}')
-
+                multiresult = pool.starmap(strict_filter, [(multi_arr[i],
+                                            dimensional_filterlist) for i in \
+                                            range(len(multi_arr))])
+                # arr[0] and [1] are filtered and unfiltered results, while each
+                # arr equals the result of a single chunk
+                for arr in multiresult:
+                    filtered_list.extend(arr[0])
+                    unfiltered_list.extend(arr[1])
+    if verbose > 0:
+        print(f'filtered: {len(filtered_list)}'
+        f'\tunfiltered: {len(unfiltered_list)}')
 
     if returnwhich == 'filtered' and not empty_filter: # which list to return
         data_list = filtered_list
@@ -206,20 +322,7 @@ def ndimensional_filter(data_list: list,
     elif returnwhich == 'unfiltered' and empty_filter:
         data_list = []
 
-    if not empty_filter:
-        for perm in filtered_list:                       # sanity check
-            if perm in unfiltered_list and verbose > 0:
-                print(f'Error in ndimensional_filter: {perm = } has been filtered '
-                        'and unfiltered.')
-        for perm in unfiltered_list:
-            if perm in filtered_list and verbose > 0:
-                print(f'Error in ndimensional_filter: {perm = } has been filtered '
-                        'and unfiltered.')
-
-    if not flattened:
-        return data_list
-    else:
-        return flatten_list(data_list)  # flatten nested lists
+    return data_list
 
 
 def cartesian_product_filtered(prodlist: list,
@@ -227,7 +330,6 @@ def cartesian_product_filtered(prodlist: list,
                                     returnwhich: str = 'filtered',
                                     filtermode: str = 'loose',
                                     max_duplicates: int = 0,
-                                    flattened: bool = False,
                                     verbose: int = 0,
                                     print_param: int = 3) -> list:
     ''' Function for permuting entries of permlist, filtering out entries in
@@ -272,33 +374,27 @@ def cartesian_product_filtered(prodlist: list,
         print('returnwhich must be either "loose" or "strict". defaulting to '
                 '"loose"')
 
-    # permuting, flattened needs to be False here #
-    permuted_list = ndimensional_product(prodlist=prodlist,
+    cartesian_product_list = ndimensional_product(prodlist=prodlist,
                                 dimensions=dimensions,
-                                max_duplicates=max_duplicates,
+                                maxduplicates=max_duplicates,
                                 verbose=verbose)
 
     if verbose > 2:
-        print(f'ndimensional_permute_filtered: {permuted_list = }')
+        print(f'cartesian product: {cartesian_product_list = }')
     if verbose > 1:
         pass
-        #print(f'ndimensional_permute_filtered: {permuted_list[:print_param][:print_param][:print_param] = }')
-
-    # filtering, flattened needs to be False here #
-    permuted_filtered_list = ndimensional_filter(data_list=permuted_list,
+    product_filtered_list = ndimensional_filter(
+                                data_list=cartesian_product_list,
                                 dimensional_filterlist=dimensional_filterlist, 
                                 returnwhich=returnwhich,
                                 filtermode=filtermode,
                                 verbose=verbose,
                                 print_param=print_param)
 
-    if not flattened:
-        return permuted_filtered_list  # not flattened
-    else:
-        return flatten_list(permuted_filtered_list)  # flatten nested lists
+    return product_filtered_list
 
 
-#@gu1.timerdecorator(4, 's')
+##@gu1.timerdecorator(4, 's')
 def main_permute():
     #perm = ['Paul', 'Basti', 'Merle', 'Kim', 'Jonas', 'Lennard']
     #perm = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
