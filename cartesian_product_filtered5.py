@@ -300,7 +300,7 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
     if verbose > 0:
         print(f'filtered: {tf(nfiltered)}\nunfiltered: {tf(nunfiltered)}\n')
 
-    return result
+    yield result
 
 class SanityCheckError(Exception):
     pass

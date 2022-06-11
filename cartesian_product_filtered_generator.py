@@ -7,7 +7,7 @@ if __name__ == '__main__':
     from _usable_util import formatter
     from _usable_util.general_util_1 import thousands_formatter as tf
     from _usable_util.general_util_1 import timerdecorator as timer
-    from _usable_util.read_write_files import write_to_file_linewise as wtfl
+    from _usable_util.read_write_files import write_to_file
 ########################################
     
 from itertools import product
@@ -140,6 +140,26 @@ def chunked_gen(generator: Generator[tuple, None, None],
                 break
         yield chunk
 
+def result_gen(dimensional_filterlist: list[list[Any]],
+                max_duplicates: int,
+                filtermode: str,
+                chunked_cart_prod_gen:Generator[list[tuple[Any]], None, None],
+                tospawn: int = cpu_count())\
+                             -> Generator[tuple[list[tuple[Any]]], None, None]:
+    # init partial function to work with imap
+    partial_filter = partial(ndimensional_filter_lists,
+                                filter=dimensional_filterlist,
+                                max_duplicates=max_duplicates,
+                                filtermode=filtermode)
+        
+    with get_context('spawn').Pool(processes=tospawn) as pool:
+        for i, res in enumerate(pool.imap(partial_filter,
+                                chunked_cart_prod_gen,
+                                chunksize=1)):
+            print(f'{i+1}') 
+            yield (res[0], res[1])
+
+                    
 def cartesian_product_filtered(alphabet: Iterable[Any],
                             dimensional_filterlist: Iterable[Iterable[Any]],
                             filtermode: str,
@@ -195,8 +215,6 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
     ALPHSIZE = len(alphabet) 
     DIMENSIONS = len(dimensional_filterlist)
     COMBINATIONS = ALPHSIZE ** DIMENSIONS
-    filtered_list = []
-    unfiltered_list = []
     # generator returning cartesian product
     cart_prod_gen = product(alphabet, repeat=DIMENSIONS)
     # number of processes to spawn for multiprocessing
@@ -234,6 +252,36 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
         if multi_flag:
             print(f'\nprocessing data using {CHUNKSNEEDED} chunks of size '
                     f'{tf(CHUNKSIZE)}. threshold: {tf(THRESHOLD)}')
+        
+    def check_and_return(filtered_list: list[tuple[Any]],
+                    unfiltered_list: list[tuple[Any] | None]) \
+                                                        -> list[tuple[Any]]:
+        nfiltered = len(filtered_list)
+        nunfiltered = len(unfiltered_list)
+
+        if verbose > 0:
+            print(f'filtered: {tf(nfiltered)}\nunfiltered: '
+                    f'{tf(nunfiltered)}\n')
+        if COMBINATIONS != nfiltered + nunfiltered:
+            print(f'sanity check failed\t{COMBINATIONS = }\t'
+                    f'{nfiltered = }\t{nunfiltered = }')
+            raise SanityCheckExcpetion
+
+        # which list to return
+        if returnwhich == 'filtered' and not empty_filter: 
+            result = filtered_list
+        elif returnwhich == 'unfiltered' and not empty_filter:
+            result = unfiltered_list
+        elif returnwhich == 'filtered' and empty_filter:
+            try:
+                result = list(cart_prod_gen)
+            except Exception as e:
+                print(f'{e}\n returning generator instead of '
+                        f'result list')
+                result = cart_prod_gen
+        elif returnwhich == 'unfiltered' and empty_filter:
+            result = []
+        return result
 
     if not empty_filter:
         if not multi_flag:
@@ -241,62 +289,21 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
                                                 dimensional_filterlist,
                                                 max_duplicates,
                                                 filtermode)
-            filtered_list, unfiltered_list = res
+            result = check_and_return(res[0], res[1])
+            return result
 
         elif multi_flag:
-            # init partial function to work with imap
-            partial_filter = partial(ndimensional_filter_lists,
-                                        filter=dimensional_filterlist,
-                                        max_duplicates=max_duplicates,
-                                        filtermode=filtermode)
             chunked_cart_prod_gen = chunked_gen(cart_prod_gen, CHUNKSIZE)
-                
-            with get_context('spawn').Pool(processes=tospawn) as pool:
-
-                for i, res in enumerate(pool.imap(partial_filter,
-                                        chunked_cart_prod_gen,
-                                        chunksize=1)):
-
-                    #print(f'{i+1}:\n{res[0][:2] = }\n{res[1][:2] = }') 
-                    #print(f'{i+1}:\t{len(res[0])}\t{len(res[1])}') 
-                    print(f'{i+1}') 
-                    filtered_list.extend(res[0])
-                    unfiltered_list.extend(res[1])
-                    
-                    if i >= CHUNKSNEEDED:
-                        break
-
-#                multires = pool.starmap(ndimensional_filter_lists,
-#                                        [(chunk,
-#                                        dimensional_filterlist,
-#                                        max_duplicates,
-#                                        filtermode) for chunk in \
-#                        chunked_generator(cart_prod_gen, generatorchunksize)])
-#
-    nfiltered = len(filtered_list)
-    nunfiltered = len(unfiltered_list)
-    if verbose > 0:
-        print(f'filtered: {tf(nfiltered)}\nunfiltered: {tf(nunfiltered)}\n')
-
-    if COMBINATIONS != nfiltered + nunfiltered:
-        print(f'sanity check failed\t{COMBINATIONS = }\t{nfiltered = }\t'
-                f'{nunfiltered = }')
-        raise SanityCheckExcpetion
-
-    if returnwhich == 'filtered' and not empty_filter: # which list to return
-        result = filtered_list
-    elif returnwhich == 'unfiltered' and not empty_filter:
-        result = unfiltered_list
-    elif returnwhich == 'filtered' and empty_filter:
-        try:
-            result = list(cart_prod_gen)
-        except Exception as e:
-            print(f'{e}\n returning generator instead of result list')
-            result = cart_prod_gen
-    elif returnwhich == 'unfiltered' and empty_filter:
-        result = []
-
-    return result
+            while True:
+                res = result_gen(dimensional_filterlist,
+                                    max_duplicates,
+                                    filtermode,
+                                    chunked_cart_prod_gen,
+                                    tospawn)
+                result = check_and_return(*res)
+                result = check_and_return(res[0], res[1])
+                yield result
+    
 
 class SanityCheckExcpetion(Exception):
     pass
@@ -314,21 +321,40 @@ def main():
     filter_list = [[], [], [], []]
     filter_list = [[],[],[1,'A','B','C','D','E','F'],[0,1,2,'A','B','C','D','E','F'], [], []]
     
-    cpf3 = cartesian_product_filtered(alphabet=toprod,
+    cpf_gen = cartesian_product_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
                                         filtermode='strict',
                                         max_duplicates=0,
-                                        threshold=800_000,
+                                        threshold=400_000,
                                         verbose=1)
-    print(f'\nafter cpf3\n')
-# make hexcodes from tuples
-    cpf3 = formatter.stringify(iterlist=cpf3, delimiter='')
-    formed = formatter.formatter(toform=cpf3,
-                                columns=8,
-                                prefix=formatter.line_numbers(10))
-    for f in formed[:10]:
-        print(f'{f}')
+    print(f'\nafter cpf_gen\n')
+    CHUNKSNEEDED = 48
+    for i, chunk in enumerate(cpf_gen):
+        print(f'chunk {i + 1}')
+        if i == 0:
+            mode = OverWriteMode.OVERWRITE
+        else:
+            mode = OverWriteMode.APPEND
+
+        # make hexcodes from tuples
+        strung_res = formatter.stringify(iterlist=chunk, delimiter='')
+
+        formed_res = formatter.formatter(toform=strung_res,
+                                        columns=32,
+                                        prefix=formatter.line_numbers(10))
+
+        filename = f'{datetime.now()} test1'
+        write_to_file(formed_res,
+                        1,
+                        r'C:\Users\lvedd\Desktop',
+                        'cart_prod_gen',
+                        filename,
+                        mode,
+                        verbose=1)
+
+        if i >= CHUNKSNEEDED -1:
+            break
         
 '''wanted behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
 loosely:
@@ -339,8 +365,9 @@ strictly:
     else unfilter combination
 '''
     
-
 if __name__ == '__main__':
+    from _usable_util.read_write_files import OverWriteMode, WriteLinesSource, FileExtensions
+    from datetime import datetime
+
     main()
-    
 
