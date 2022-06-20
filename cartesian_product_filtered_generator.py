@@ -195,7 +195,7 @@ def main():
     cpf3 = cartesian_product_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
-                                        filtermode='strict',
+                                        filtermode='loose',
                                         max_duplicates=1,
                                         threshold=400_000,
                                         verbose=2)
