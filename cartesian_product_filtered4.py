@@ -23,20 +23,18 @@ from multiprocessing import cpu_count, Pool, get_context, Pipe, Lock, Process, Q
 
 import sys, os
 
-def max_dup_check(iterable: Iterable[Any], max_duplicates: int) -> bool:
+def max_dup_check(iterable: Iterable, max_duplicates: int) -> bool:
     """
     determines if any item in input iterable is found more than
         max_duplicates times within iterable.
     returns true if no item has been found more than max_dup times
         in iterable
     """
-
     print(f'{iterable = }')
     for item in iterable:
         if iterable.count(item) > max_duplicates:
             print(f'{item = }\t{iterable.count(item) = }\n')
             return False
-    print(f'{item = }\t{iterable.count(item) = }\n')
     return True
 
 
@@ -75,13 +73,9 @@ def ndimensional_filter_lists(data_iterable: Iterable[Iterable[Any]],
 
                     filtered_list.append(combination)
                     filtered = True
-                    #print(f'filtered ({filtermode}):{combination}')
-
                     break
 # if combination hasnt been unfiltered, append to filtered_sub_list 
             if not filtered:
-                #print(f'unfiltered ({filtermode}):{combination}')
-
                 unfiltered_list.append(combination)
 
         if maxduplegal and filtermode == 'strict':
@@ -98,10 +92,7 @@ def ndimensional_filter_lists(data_iterable: Iterable[Iterable[Any]],
                     combination[dimension] not in filter_values:
                     unfiltered_list.append(combination)
                     unfiltered = True
-                    #print(f'first unfiltered ({filtermode}):{combination}')
-
                     break
-            #print(f'{unfiltered = }')
 # if combination hasnt been unfiltered, append to filtered_sub_list 
             if not unfiltered:
                 #print(f'filtered ({filtermode}):{combination}')

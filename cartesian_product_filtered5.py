@@ -7,10 +7,9 @@ if __name__ == '__main__':
     from _usable_util import formatter
     from _usable_util.read_write_files import write_to_file
     from _usable_util.general_util_1 import thousands_formatter as tf
-    from _usable_util.general_util_1 import timerdecorator as timer
-    from datetime import datetime
 ########################################
     
+from datetime import datetime
 from itertools import product
 from scipy.special import binom
 from math import ceil
@@ -19,7 +18,7 @@ from typing import Any, Generator, Iterable
 # for superclasses for subclassing by user
 #from collections.abc import Iterable
 from functools import partial
-from multiprocessing import cpu_count, Pool, get_context, Pipe, Lock, Process, Queue
+from multiprocessing import cpu_count, Pool, get_context
 
 import sys, os
 
