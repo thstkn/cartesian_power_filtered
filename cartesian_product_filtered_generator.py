@@ -64,8 +64,7 @@ def chunked_gen(iterable: Iterable,
                                 -> Generator[list[Any], None, None]:
     """ generator to yield other iterable chunk wise as lists. Will it though?
     """
-    while True:
-        yield [(list(iterable) for _ in range(chunksize))]
+    yield from [list(iterable) for _ in range(chunksize)]
 
 def cartesian_product_filtered(alphabet: Sequence[Any],
                             dimensional_filterlist: list[list[Any]],
