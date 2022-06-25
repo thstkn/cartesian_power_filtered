@@ -202,7 +202,7 @@ def main():
     cpf3 = [chunk for chunk in cpf3]
     cpf3 = cpf3[0]
 
-    cpf3 = formatter.stringify(iterlist=cpf3, delimiter='')
+    cpf3 = formatter.stringify(iterabl=cpf3, delimiter='')
     print()
     formed = formatter.formatter(toform=cpf3,
                                 columns=16,
