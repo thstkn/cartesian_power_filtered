@@ -35,9 +35,9 @@ with ```alphabet = ['A', 'B', 'C']``` and ```dimensional_filterlist = [ ['A'], [
 expected result:
 
 ```
-AAA AAB AAC ABA ABB ABC
+AAA AAB AAC
+ABA ABB ABC
 ```
-- note how in every tuple the first dimensions item is always 'A' and the second dimensions items are either 'A' or 'B', while the last dimensions items are any from ```alphabet```.
 
 as :
 
@@ -45,7 +45,8 @@ as :
 [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'),
  ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
-- omitted showing original output '```list[tuple[Any]]```' in following examples
+- note how in every tuple the first dimensions item is always 'A' and the second dimensions items are either 'A' or 'B', while the last dimensions items are any from ```alphabet```.
+omitted showing original output '```list[tuple[Any]]```' in following examples.
 <br/><br/><br/>
 
 
