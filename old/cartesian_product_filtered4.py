@@ -326,22 +326,6 @@ def main():
                                 prefix=formatter.line_numbers(10))
     for f in formed[:10]:
         print(f'{f}')
-        
-    
-    windesk = r'C:\Users\lvedd\Desktop'
-    target = 'rwlinestesting'
-    timestr = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
-    timestr = timestr[:-3]
-    fname = f'{timestr} cart prod list'
-
-    write_to_file(tofile=formed,
-                    fileextension='txt',
-                    parentdir=windesk,
-                    targetdir=target,
-                    filename=fname,
-                    overwrite='append',
-                    verbose=2)
-    
 
         
 '''wanted behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
