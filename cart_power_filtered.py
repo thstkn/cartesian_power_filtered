@@ -24,7 +24,7 @@ def ndimensional_filter(combination: Sequence[Any],
                         max_duplicates: int,
                         filtermode: str) \
                         -> bool:
-    """Returns True if the combination is accepted by filter, otherwise false.
+    """ Returns True if the combination is accepted by filter, otherwise false.
     """
     if max_duplicates > 0:
         # returns true if no item has been found more than max_dup times in c
@@ -35,7 +35,6 @@ def ndimensional_filter(combination: Sequence[Any],
         # return TRUE if any combination[dimension] is in filter[dimension]
         # while dim_filter is not empty
         return any(combination[dim] in dim_filter
-                                    if dim_filter else True
                                     for dim, dim_filter in enumerate(filter))
     if filtermode == 'strict':
         # return FALSE if combination[item] is not in filter[dimension]
@@ -121,6 +120,7 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
     # set empty filter flag to True if ALL filterlists are empty AND max_duplicates < 1
     empty_filter = all(dim_fil == [] for dim_fil in dimensional_filterlist) and \
                     max_duplicates < 1
+    print(f'{empty_filter = }')
     # number of processes to spawn for multiprocessing
     tospawn = cpu_count()
     multi_factor = 1    # multi_factor for adjustment of chunksize chunksneeded
@@ -160,17 +160,17 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
             yield list(cart_prod_gen)
         # no multiprocessing, but filters
         elif returnwhich == 'filtered' and not empty_filter:
-            yield [comb for comb in cart_prod_gen if 
-                                            ndimensional_filter(comb,
-                                            dimensional_filterlist,
-                                            max_duplicates,
-                                            filtermode)]
+            yield [combination for combination in cart_prod_gen 
+                            if ndimensional_filter(combination,
+                                                    dimensional_filterlist,
+                                                    max_duplicates,
+                                                    filtermode)]
         elif returnwhich == 'unfiltered' and not empty_filter:
-            yield [comb for comb in cart_prod_gen if not
-                                            ndimensional_filter(comb,
-                                            dimensional_filterlist,
-                                            max_duplicates,
-                                            filtermode)]
+            yield [combination for combination in cart_prod_gen
+                            if not ndimensional_filter(combination,
+                                                        dimensional_filterlist,
+                                                        max_duplicates,
+                                                        filtermode)]
     elif chunksneeded > 0:
         chunked_cart_prod_gen = chunked_gen(cart_prod_gen, chunksize)
         # quickest route if multiprocessing and no filters. this true?
@@ -193,6 +193,7 @@ def main():
     toprod = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
     toprod = [0,1,2,3,4,5,6,7,8,9]
     toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
+    toprod = ['A', 'B', 'C', 'D', 'E', 'F']
     toprod = ['A', 'B', 'C']
     filter_list = [[0], [1], ['lol'], [(1, 2)], [], []]
     filter_list = [['ying young'], [], ['sheesh', 'skrrr skrrrt'], [],
@@ -202,13 +203,13 @@ def main():
     filter_list = [[], [], [], [], [], []]
     filter_list = [[], [], [], []]
     filter_list = [['A','B','C','D','E','F'],['A','B','C','D','E','F'],['A','B','C','D','E','F']]
-    filter_list = [[], [], []]
+    filter_list = [[], ['A', 'B'], []]
     
     cpf3 = cartesian_power_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
-                                        filtermode='loose',
-                                        max_duplicates=2,
+                                        filtermode='strict',
+                                        max_duplicates=0,
                                         result_size=400_000,
                                         verbose=2)
     # make strings from tuples
