@@ -46,6 +46,7 @@ as :
  ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
 - note how in every tuple the first dimensions item is always 'A' and the second dimensions items are either 'A' or 'B', while the last dimensions items are any from ```alphabet```.
+<br/>
 omitted showing original output '```list[tuple[Any]]```' in following examples.
 <br/><br/><br/>
 
