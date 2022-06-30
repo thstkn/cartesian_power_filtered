@@ -38,11 +38,12 @@ expected result:
 AAA AAB AAC ABA ABB ABC
 ```
 
-as (omitted showing original output 'list[tuple[Any]]' in following examples):
+as :
 
 ```
-[('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'), ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
+[('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'), <br/> ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
+> omitted showing original output '```list[tuple[Any]]```' in following examples
 <br/><br/>
 
 
