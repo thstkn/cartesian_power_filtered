@@ -29,7 +29,7 @@ See examples below, where ```dimensional_filterlist[2] == []```.
 with ```alphabet = ['A', 'B', 'C']``` and ```dimensional_filterlist = [ ['A'], ['A', 'B'], [] ]```
  <br/> <br/>
 
- - strict filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'strict')```
+ - strict filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'strict')``` <br/>
 expected result:
 
 ```
@@ -44,7 +44,7 @@ as (omitted showing original output 'list[tuple[Any]]' in following examples):
 <br/>
 
 
-- loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')```
+- loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
 expected result:
 
 ```
@@ -57,7 +57,7 @@ CCA CCB CCC
  <br/>
 
 
-- loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)```
+- loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)``` <br/>
 this setting actually imitates functionality of ```itertools.permutations())``` <br/>
 expected result:
 
