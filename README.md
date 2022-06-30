@@ -28,7 +28,7 @@ See examples below, where ```dimensional_filterlist[2] == []```.
 - ```verbose```: takes values from 0-2 inclusive
 
 
-- ```return```: From ```Sequence[Any]``` returns ```Generator[list[tuple[Any]]]``` (Generator[list[combinations[Any]]])
+- ```return```: From ```Sequence[Any]``` returns ```Generator[list[tuple[Any]]]``` where ```tuple``` are the resulting combinations.
 <br/> <br/>
 
 Example usage and expected outputs
