@@ -1,7 +1,8 @@
 # Cartesian Power Filtered
 Makes cartesian product of any values of given dimensionality with various options for filtering the result.
 
-- This is a usefull tool to generate test data with a **_certain, concrete_** pattern. <br/> <br/>
+- This is a usefull tool to generate test data with a **_certain, concrete_** pattern. 
+<br/> <br/>
 
 # Parameters and how to use
 Function for computing a cartesian power of all items in alphabet and filtering by maximum number of duplicated items within all items of the cartesian power specific filterlist. filterlist needs to be set with empty lists in dimensions which are not to be filtered to dictate dimensionality of combination correctly. Returns generator of lists of (un)filtered cartesian power with maxsize of threshold
@@ -24,6 +25,7 @@ See examples below, where ```dimensional_filterlist[2] == []```.
 
 
 - ```return```: From ```Sequence[Any]``` returns ```Generator[list[tuple[Any]]]``` (Generator[list[combinations[Any]]])
+<br/> <br/>
 
 # Example usage and expected outputs
 with ```alphabet = ['A', 'B', 'C']``` and ```dimensional_filterlist = [ ['A'], ['A', 'B'], [] ]```
