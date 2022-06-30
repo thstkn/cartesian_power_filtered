@@ -56,14 +56,13 @@ as :
 
 
 - loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
-expected result:
+- note how here in in comparison to strict filtering above, items in any dimension can in principle be any element from ```alphabet```, as long as in dimension 1 is an ```'A'``` or in dimension 2 is either an ```'A'``` or a ```'B'```.
 
 ```
 AAA AAB AAC ABA ABB ABC
 ACA ACB ACC BAA BAB BAC
-BBA BBB BBC BCA BCB BCC
-CAA CAB CAC CBA CBB CBC
-CCA CCB CCC
+BBA BBB BBC CAA CAB CAC
+CBA CBB CBC
 ```
  <br/><br/>
 
