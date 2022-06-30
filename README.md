@@ -56,7 +56,7 @@ as :
 
 
 - loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
-- note how here in in comparison to strict filtering above, items in any dimension can in principle be any element from ```alphabet```, as long as in first dimension is an ```'A'``` or in second dimension is either an ```'A'``` or a ```'B'```, while the items in third dimension can be any from ```'alphabet'``` as above.
+- note how here in in comparison to strict filtering above, items in any dimension can in principle be any element from ```alphabet```, as long as in first dimension is an ```'A'``` or in second dimension is either an ```'A'``` or a ```'B'```, while the items in third dimension can be any from ```alphabet``` as above.
 
 ```
 AAA AAB AAC ABA ABB ABC
