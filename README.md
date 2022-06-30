@@ -52,7 +52,7 @@ as :
 [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'),
  ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
-<br/><br/><br/>
+<br/><br/>
 
 
 - loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
