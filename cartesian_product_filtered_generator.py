@@ -14,13 +14,13 @@ from datetime import datetime
 from itertools import product
 from math import ceil
 # for type annotations:
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Iterable
 # superclasses for subclassing by user
 from collections.abc import Sequence
 from functools import partial
 from multiprocessing import cpu_count, get_context
 
-import sys, os
+import sys
 
 
 def ndimensional_filter(combination: Sequence[Any],
@@ -68,13 +68,13 @@ def chunked_gen(iterable: Iterable,
     yield from [list(iterable) for _ in range(chunksize)]
 
 def cartesian_product_filtered(alphabet: Sequence[Any],
-                            dimensional_filterlist: list[list[Any]],
-                            filtermode: str,
-                            returnwhich: str = 'filtered',
-                            max_duplicates: int = 0,
-                            threshold: int = 1_000,
-                            verbose: int = 0) \
-                            -> Generator[list[Any], None, None]:
+                                dimensional_filterlist: list[list[Any]],
+                                filtermode: str,
+                                returnwhich: str = 'filtered',
+                                max_duplicates: int = 0,
+                                threshold: int = 1_000,
+                                verbose: int = 0) \
+                                            -> Generator[list[Any], None, None]:
     """ Function for brute forcing a cartesian product of all items in alphabet
     and filtering by maximum number of duplicated items within all items of the
     cartesian product specific filterlist.
@@ -179,7 +179,6 @@ def cartesian_product_filtered(alphabet: Sequence[Any],
             yield from pool.imap(mp_filter_worker, chunked_cart_prod_gen)
 
 def main():
-    toprod = ['Paul', 'Basti', 'Merle', 'Kim', 'Jonas', 'Lennard']
     toprod = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
     toprod = [0,1,2,3,4,5,6,7,8,9]
     toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
@@ -226,13 +225,13 @@ def main():
                     overwrite='append',
                     verbose=2)
         
-'''wanted behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
+''' behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
 loosely:
     if dim 0 contains 1 OR dim 1 contains 1 or 2: filter combination
-    else unfilter combination
+    else: unfilter combination
 strictly:
     if dim 0 contains 1 AND dim 1 contains 1 or 2: filter combination
-    else unfilter combination
+    else: unfilter combination
 '''
 
 if __name__ == '__main__':

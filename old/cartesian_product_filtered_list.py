@@ -1,26 +1,26 @@
-
 #%%
 
-### only needed for timing decorator ###
+########################################
 if __name__ == '__main__':
     import sys
     sys.path.append('..')
-    from _usable_util import general_util_1 as gu1
-    from _usable_util import formatter
-else: timer = None
+    from _usable_util.formatting import formatter
+    from _usable_util.read_write_files import write_to_file
+    from _usable_util.formatting.thousands_formatter \
+            import thousands_formatter as tf
 ########################################
     
 from itertools import product
-from scipy.special import binom
 from math import ceil
 # for type annotations:
 from typing import Any, Generator, Iterable
 # for superclasses for subclassing by user
 #from collections.abc import Iterable
 from functools import partial
-from multiprocessing import cpu_count, Pool, get_context, Pipe, Lock, Process, Queue
+from datetime import datetime
+from multiprocessing import cpu_count, get_context 
 
-import sys, os
+import sys
 
 def max_dup_check(iterable: Iterable[Any], max_duplicates: int) -> bool:
     """
@@ -38,26 +38,29 @@ def max_dup_check(iterable: Iterable[Any], max_duplicates: int) -> bool:
     print(f'{item = }\t{iterable.count(item) = }\n')
     return True
 
+
 def ndimensional_filter_lists(data_iterable: Iterable[Iterable[Any]],
-                        filter: Iterable[Iterable[Any]], 
-                        max_duplicates: int,
-                        filtermode: str) \
+                                filter: Iterable[Iterable[Any]], 
+                                max_duplicates: int,
+                                filtermode: str) \
                                                     -> tuple[list, list]:
     filtered_list = []
     unfiltered_list = []
     checkdups = False
+    # prevent function call of max_dup_check if max_duplicates is not 0
     if max_duplicates > 0:
         checkdups = True
-    else:
-        maxduplegal = True
-
-    print(f'Hi, im process {os.getpid()} with:\n{data_iterable = }\n')
+    else:   # if max_duplicates is 0 set all to legal
+        maxduplegal = True 
+    #print(f'Hi, im process {os.getpid()}\t{data_iterable[:2] = }')
 
     for combination in data_iterable:
+        # init flags for each combination
         filtered = False
+        unfiltered = False
+
         if checkdups:
             maxduplegal = max_dup_check(combination, max_duplicates)
-
         #print(f'{maxduplegal = }')
 
         if maxduplegal and filtermode == 'loose':
@@ -71,9 +74,13 @@ def ndimensional_filter_lists(data_iterable: Iterable[Iterable[Any]],
 
                     filtered_list.append(combination)
                     filtered = True
+                    #print(f'filtered ({filtermode}):{combination}')
+
                     break
-            # if combination hasnt been unfiltered, append to filtered_sub_list 
+# if combination hasnt been unfiltered, append to filtered_sub_list 
             if not filtered:
+                #print(f'unfiltered ({filtermode}):{combination}')
+
                 unfiltered_list.append(combination)
 
         if maxduplegal and filtermode == 'strict':
@@ -90,126 +97,58 @@ def ndimensional_filter_lists(data_iterable: Iterable[Iterable[Any]],
                     combination[dimension] not in filter_values:
                     unfiltered_list.append(combination)
                     unfiltered = True
+                    #print(f'first unfiltered ({filtermode}):{combination}')
+
                     break
-            # if combination hasnt been unfiltered, append to filtered_sub_list 
+            #print(f'{unfiltered = }')
+# if combination hasnt been unfiltered, append to filtered_sub_list 
             if not unfiltered:
+                #print(f'filtered ({filtermode}):{combination}')
+
                 filtered_list.append(combination)
 
         else:
+            #print(f'last unfiltered ({filtermode}):{combination}')
+
             unfiltered_list.append(combination)
+    #print(len(filtered_list), len(unfiltered_list))
 
     return filtered_list, unfiltered_list
 
-def ndimensional_filter_single(combination: Iterable[Any],
-                                filter: Iterable[Iterable[Any]], 
-                                max_duplicates: int,
-                                filtermode: str) \
-                                -> tuple[tuple | None, tuple | None]:
-    checkdups = False
-    if max_duplicates > 0:
-        checkdups = True
-    else:
-        maxduplegal = True
-
-    print(f'Hi, im process {os.getpid()} with:\n{combination = }\n')
-
-    if checkdups:
-        maxduplegal = max_dup_check(combination, max_duplicates)
-
-    filtered = None
-    unfiltered = None
-    if maxduplegal and filtermode == 'loose':
-        for dimension, filter_values in enumerate(filter):
-            # go to next dimension if filter is empty
-            if filter_values == []:
-                continue
-        # append combination to filtered_sub if it is in filter and break
-            elif filter_values != [] and \
-                combination[dimension] in filter_values:
-                    filtered = combination
-        # if combination hasnt been unfiltered, append to filtered_sub_list 
-        if filtered is None:
-            unfiltered = combination
-
-    if maxduplegal and filtermode == 'strict':
-        for dimension, filter_values in enumerate(filter):
-            # go to next dimension if filter is empty
-            if filter_values == []:
-                continue
-            # go to next dimension if combination[dimension] is in filter
-            elif filter_values != [] and \
-                combination[dimension] in filter_values:
-                continue
-# append combination[dimension] to unfiltered_sub if not in filter and break
-            elif filter_values != [] and \
-                combination[dimension] not in filter_values:
-                    unfiltered = combination
-        # if combination hasnt been unfiltered, append to filtered_sub_list 
-        if not unfiltered:
-            filtered_list.append(combination)
-
-    else:
-        unfiltered_list.append(combination)
-
-    return (filtered, unfiltered)
-
-
-def multiproc(dimensional_filterlist: list[list[Any]],
-                max_duplicates: int,
-                filtermode: str,
-                chunked_cart_prod_gen: Generator[tuple, None, None],
-                imapchunksize: int,
-                prodgenchunksize: int) \
-                                                    -> tuple[list, list]:
-    filtered_list = []
-    unfiltered_list = []
-    # number of processes to spawn for multiprocessing
-    tospawn = cpu_count()
-
-    partial_filter = partial(ndimensional_filter_lists,
-                            filter=dimensional_filterlist,
-                            max_duplicates=max_duplicates,
-                            filtermode=filtermode)
-
-    with get_context('spawn').Pool(processes=tospawn) as pool:
-        for res in pool.imap(partial_filter,
-                            chunked_cart_prod_gen,
-                            chunksize=imapchunksize):
-            filtered_list.append(res[0])
-            unfiltered_list.append(res[1])
-            print(f'{res[:5] = }\t{res[1][:5] = }') 
-
-    return filtered_list, unfiltered_list
-
-def chunked_generator(generator: Generator[tuple, None, None],
-                            chunksize: int) \
-                                                -> Generator[tuple, None, None]:
+                                        
+def chunked_gen(generator: Generator[tuple, None, None],
+                chunksize: int) \
+                                -> Generator[list[tuple], None, None]:
     """
-    returns generator chunk wise.
+    returns generator chunk wise as lists.
     """
-    for i, data in enumerate(generator):
-        yield data
-        if i >= chunksize:
-            break
-
+    while True:
+        chunk = []
+        for i, data in enumerate(generator):
+            chunk.append(data)
+# chunksize - 1 because data needs to be appended before checking, otherwise
+# always going to miss last item of chunk
+            if i >= chunksize - 1:
+                break
+        yield chunk
 
 def cartesian_product_filtered(alphabet: Iterable[Any],
-                                dimensional_filterlist: Iterable[Iterable[Any]],
-                                filtermode: str,
-                                returnwhich: str = 'filtered',
-                                max_duplicates: int = 0,
-                                imapchunksize: int = 1,
-                                verbose: int = 0) \
+                            dimensional_filterlist: Iterable[Iterable[Any]],
+                            filtermode: str,
+                            returnwhich: str = 'filtered',
+                            max_duplicates: int = 0,
+                            threshold: int = 1_000,
+                            verbose: int = 0) \
                     -> list[tuple[Any]] | Generator[tuple, None, None]:
     """
-    Function for brute forcing a cartesian product of all items in prodit and
+    Function for brute forcing a cartesian product of all items in alphabet and
     filtering by maximum number of duplicated items within all items of the
     cartesian product specific filterlist.
     filterlist-lists. filterlist needs to be set with empty lists in dimensions
     which are not to be filtered to dictate dimensionality of combination
     correctly.
 
-    prodit: list of entries to permute.
+    alphabet: list of entries to permute.
     dimensional_filterlist: n-dimensional list of lists of entries to filter
         out. format is [[dimension 1], [dimension 2], ...].
         len(filterlist) = number of inner lists = number of dimensions and
@@ -245,14 +184,15 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
                 '"loose"')
 
     # determine meta data for status printing and chunksiz estimation
-    alphsize = len(alphabet) 
-    dimensions = len(dimensional_filterlist)
-    combinations = alphsize ** dimensions
-
+    ALPHSIZE = len(alphabet) 
+    DIMENSIONS = len(dimensional_filterlist)
+    COMBINATIONS = ALPHSIZE ** DIMENSIONS
     filtered_list = []
     unfiltered_list = []
-
-    cart_prod_gen = product(alphabet, repeat=dimensions)
+    # generator returning cartesian product
+    cart_prod_gen = product(alphabet, repeat=DIMENSIONS)
+    # number of processes to spawn for multiprocessing
+    tospawn = cpu_count()
 
     # if no filter is given in ANY dimension, return all combinations
     empty_filter = True
@@ -261,31 +201,36 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
             empty_filter = False
             break
 
-    multi_factor = 1        # multi_factor for adjustment of chunksize
-                            # chunksneeded
-    threshold = 50_000      # threshold for deciding if mulitiproc will be used
-    count = 1               # counter for automatic chunk sizes
+    multi_factor = 1    # multi_factor for adjustment of chunksize chunksneeded
+    THRESHOLD = threshold  # threshold for deciding if mulitiproc will be used
+    count = 1           # counter for automatic chunk sizes
     # following code determines chunks size from threshold and cpu count
     # (tospawn). if threshold isnt reached, dont use multi processing
     multi_flag = False
-    if combinations > threshold:
+
+    if COMBINATIONS > THRESHOLD:
+        # init chunksize for while loop if threshold is reached
+        CHUNKSIZE = COMBINATIONS
         multi_flag = True
-        chunksneeded = cpu_count() * multi_factor * count
-        generatorchunksize = int(ceil(combinations // chunksneeded))
-        while generatorchunksize > threshold:
-            count += 1
-            chunksneeded = cpu_count() * multi_factor * count
-            generatorchunksize = int(ceil(combinations // chunksneeded))
+    else:
+        CHUNKSIZE = 0
+    while CHUNKSIZE > THRESHOLD:
+        CHUNKSNEEDED = tospawn * multi_factor * count
+        CHUNKSIZE = int(ceil(COMBINATIONS // CHUNKSNEEDED) + 1)
+        count += 1
+    # size of last chunk will be smaller if COMBINATIONS % CHUNKSNEEDED != 0
+    # LASTCHUNKSIZE value is needed for sanitychecking of result
+    LASTCHUNKSIZE = CHUNKSIZE - (CHUNKSIZE * CHUNKSNEEDED - COMBINATIONS)
 
     if verbose > 0: # status print
         print(f'cartesian product filtered:\tmax possible combinations '
-                f'({alphsize}^{dimensions}) = {combinations}\n{filtermode = }'
-                f'\t{returnwhich = }\n')
+                f'{ALPHSIZE}^{DIMENSIONS} = {tf(COMBINATIONS)}\n'
+                f'{filtermode = }\t{returnwhich = }\n')
         for i, filt in enumerate(dimensional_filterlist):
             print(f'dim: {i + 1}\t{filt}')
         if multi_flag:
-            print(f'\nprocessing data using {chunksneeded} chunks of size '
-                    f'{generatorchunksize}')
+            print(f'\nprocessing data using {CHUNKSNEEDED} chunks of size '
+                    f'{tf(CHUNKSIZE)}. threshold: {tf(THRESHOLD)}')
 
     if not empty_filter:
         if not multi_flag:
@@ -296,66 +241,73 @@ def cartesian_product_filtered(alphabet: Iterable[Any],
             filtered_list, unfiltered_list = res
 
         elif multi_flag:
+            # init partial function to work with imap
             partial_filter = partial(ndimensional_filter_lists,
                                         filter=dimensional_filterlist,
                                         max_duplicates=max_duplicates,
                                         filtermode=filtermode)
-
-            print(f'{partial_filter(chunked_generator(cart_prod_gen, 10)) = }')
-
-            partial_filter = partial(ndimensional_filter_single,
-                                        filter=dimensional_filterlist,
-                                        max_duplicates=max_duplicates,
-                                        filtermode=filtermode)
-
-            # number of processes to spawn for multiprocessing
-            tospawn = cpu_count()
-
+            chunked_cart_prod_gen = chunked_gen(cart_prod_gen, CHUNKSIZE)
+                
             with get_context('spawn').Pool(processes=tospawn) as pool:
 
-                for res in pool.imap(partial_filter,
-                        chunked_generator(cart_prod_gen, generatorchunksize),
-                        chunksize=imapchunksize):
-                    filtered_list.append(res[0])
-                    unfiltered_list.append(res[1])
-                print(f'{res[:5] = }\t{res[1][:5] = }') 
+                for i, res in enumerate(pool.imap(partial_filter,
+                                        chunked_cart_prod_gen,
+                                        chunksize=1)):
+                    if i >= CHUNKSNEEDED:
+                        break
 
-                #res = multiproc(dimensional_filterlist=dimensional_filterlist, max_duplicates=max_duplicates, filtermode=filtermode, chunked_cart_prod_gen=chunk, imapchunksize=1)
+                    if returnwhich == 'filtered':
+                        filtered_list.extend(res[0])
+                    elif returnwhich == 'unfiltered':
+                        unfiltered_list.extend(res[1])
+                    
+                    if i < CHUNKSNEEDED:
+                        if verbose > 1:
+                            print(f'{i+1}:\t{len(res[0])}\t{len(res[1])}') 
+                            print(f'{res[0][:2] = }\n{res[1][:2] = }\n') 
+        # for last chunk set CHUNKSIZE to LASTCHUNKSIZE for sanity checking
+                        if i == CHUNKSNEEDED - 1:
+                            CHUNKSIZE = LASTCHUNKSIZE
+                        nfiltered = len(res[0])
+                        nunfiltered = len(res[1])
+                        # sanity checking each return
+                        if CHUNKSIZE != nfiltered + nunfiltered:
+                            print(f'sanity check failed\t{CHUNKSIZE = }\t'
+                                    f'{nfiltered = }\t{nunfiltered = }')
+                            raise SanityCheckError
 
-    nfiltered = len(filtered_list)
-    nunfiltered = len(unfiltered_list)
-    assert(combinations == nfiltered + nunfiltered), f'sanity check failed'
-    if combinations != nfiltered + nunfiltered:
-        print(f'sanity check failed\t{combinations = }\t{nfiltered = }\t'
-                f'{nunfiltered = }')
-        raise SanityCheckExcpetion
-    if verbose > 0:
-        print(f'filtered: {nfiltered}'
-                f'\tunfiltered: {nunfiltered}')
-
-    if returnwhich == 'filtered' and not empty_filter: # which list to return
+    # which list to return
+    if returnwhich == 'filtered' and not empty_filter: 
         result = filtered_list
+        nunfiltered = COMBINATIONS - len(filtered_list)
     elif returnwhich == 'unfiltered' and not empty_filter:
         result = unfiltered_list
+        nfiltered = COMBINATIONS - len(unfiltered_list)
     elif returnwhich == 'filtered' and empty_filter:
         try:
             result = list(cart_prod_gen)
         except Exception as e:
             print(f'{e}\n returning generator instead of result list')
             result = cart_prod_gen
+        nfiltered = COMBINATIONS
+        nunfiltered = 0
     elif returnwhich == 'unfiltered' and empty_filter:
         result = []
+        nfiltered = 0
+        nunfiltered = COMBINATIONS
+
+    if verbose > 0:
+        print(f'filtered: {tf(nfiltered)}\nunfiltered: {tf(nunfiltered)}\n')
 
     return result
 
-class SanityCheckExcpetion(Exception):
+class SanityCheckError(Exception):
     pass
 
 #@gu1.timerdecorator(4, 's')
-def main_permute():
+def main():
     toprod = ['Paul', 'Basti', 'Merle', 'Kim', 'Jonas', 'Lennard']
     toprod = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
-    toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
     toprod = [0,1,2,3,4,5,6,7,8,9]
     toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
     filter_list = [[0], [1], ['lol'], [(1, 2)], [], []]
@@ -363,22 +315,42 @@ def main_permute():
                 ['therapiegalaxie', 'kraterkosmos', 'narkosehelikopter'], []]
     filter_list = [[], [], [], [], [], []]
     filter_list = [[], [], [], []]
-    filter_list = [[],[],['A','B','C','D','E','F'],[0,1,2,'A','B','C','D','E','F']]
+    filter_list = [[],[],[1,'A','B','C','D','E','F'],[0,1,2,'A','B','C','D','E','F']]
+    filter_list = [[],[],[1,'A','B','C','D','E','F'],[0,1,2,'A','B','C','D','E','F'], [], [], []]
+    filter_list = [[],[],[1,'A','B','C','D','E','F'],[0,1,2,'A','B','C','D','E','F'], [], []]
     
     cpf3 = cartesian_product_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
                                         filtermode='strict',
                                         max_duplicates=0,
-                                        verbose=1)
+                                        threshold=400_000,
+                                        verbose=2)
     print(f'\nafter cpf3\n')
 # make hexcodes from tuples
     cpf3 = formatter.stringify(iterlist=cpf3, delimiter='')
     formed = formatter.formatter(toform=cpf3,
-                                columns=16,
+                                columns=32,
                                 prefix=formatter.line_numbers(10))
     for f in formed[:10]:
         print(f'{f}')
+        
+    
+    windesk = r'C:\Users\lvedd\Desktop'
+    target = 'rwlinestesting'
+    timestr = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
+    timestr = timestr[:-3]
+    fname = f'{timestr} cart prod list'
+
+    write_to_file(tofile=formed,
+                    fileextension='txt',
+                    parentdir=windesk,
+                    targetdir=target,
+                    filename=fname,
+                    overwrite='append',
+                    verbose=2)
+    
+
         
 '''wanted behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
 loosely:
@@ -391,9 +363,6 @@ strictly:
     
 
 if __name__ == '__main__':
-
-    main_permute()
+    main()
     
 
-
-# %%
