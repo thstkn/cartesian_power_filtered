@@ -5,12 +5,10 @@ if __name__ == '__main__':
     import sys
     sys.path.append('..')
     from _usable_util.formatting import formatter
-    from _usable_util.read_write_files import write_to_file
     from _usable_util.formatting.thousands_formatter \
             import thousands_formatter as tf
 ########################################
     
-from datetime import datetime
 from itertools import product
 from math import ceil
 # for type annotations:
@@ -178,6 +176,7 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
             yield from pool.imap(mp_filter_worker, chunked_cart_prod_gen)
 
 def main():
+    # i use main() only for testing purposes.
     toprod = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
     toprod = [0,1,2,3,4,5,6,7,8,9]
     toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
@@ -210,19 +209,6 @@ def main():
         print(f'{f}')
     return
     
-    windesk = r'C:\Users\lvedd\Desktop'
-    target = 'rwlinestesting'
-    timestr = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
-    timestr = timestr[:-3]
-    fname = f'{timestr} cart prod list'
-
-    write_to_file(tofile=formed,
-                    fileextension='txt',
-                    parentdir=windesk,
-                    targetdir=target,
-                    filename=fname,
-                    overwrite='append',
-                    verbose=2)
         
 ''' behaviour filtering perm [1,2,3] with [[1],[1,2],[]]:
 loosely:
