@@ -67,21 +67,21 @@ def chunked_gen(iterable: Iterable,
 def cartesian_power_filtered(alphabet: Sequence[Any], 
                                dimensional_filterlist: list[list[Any]],
                                filtermode: Literal['loose', 'strict'],
+                               max_duplicates: int = 0,
                                returnwhich: Literal['filtered', 'unfiltered'] \
                                                                 = 'filtered',
-                               max_duplicates: int = 0,
-                               threshold: int = 1_000,
+                               result_size: int = 1_000,
                                verbose: int = 0) \
-                                            -> Generator[list[Any], None, None]:
-    """ Function for brute forcing a cartesian power of all items in alphabet
-    and filtering by maximum number of duplicated items within all items of the
+                                            -> Generator[list[tuple[Any]], None, None]:
+    """ Function for computing a cartesian power of all items in alphabet and 
+    filtering by maximum number of duplicated items within all items of the 
     cartesian power specific filterlist.
-    filterlist needs to be set with empty lists in dimensions which are not to 
+        filterlist needs to be set with empty lists in dimensions which are not to 
     be filtered to dictate dimensionality of combination correctly.
         Returns generator of lists of (un)filtered cartesian power with
-    maxsize of threshold    
+    maxsize of result_size    
 
-    * alphabet: Sequence of entries to permute.
+    * alphabet: Sequence of entries to permute. Entries can be of any type.
     * dimensional_filterlist: n-dimensional list of lists of entries to filter
         out. len(filterlist) = number of dimensions, dictates dimensionality of 
         combination. if inner lists are empty, no filtering will take place in 
@@ -93,12 +93,18 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
         dimensional_filterlist will be filtered. if 'loose', combinations which
         contain at least one item which is set in dimensional_filterlist in a
         given dimension of all dimensions are filtered.
-    * max_duplicates: if set to a number > 0, combinations which contain more
-        than max_duplicates of the same item in a given combination will be
-        filtered out. This is useful to set to reduce computation time.
-    * threshold: determines chunksize of generated lists
+    * max_duplicates: if set to a number > 0, combinations which contain more 
+        than max_duplicates of the same item in a given combination will be 
+        filtered out. This is useful to set to reduce computation for huge 
+        datasets time as the check is applied before dimensional filtering.
+    * result_size: determines chunksize of generated result-lists as well as 
+        the size of chunks for multiprocessing workers. If number of resulting 
+        combinations of original cartesian product is bigger than this, 
+        multiprocessing will be used for filtering.
     * verbose: takes values from 0-2 inclusively
     """
+
+    threshold = result_size
 
     if returnwhich not in ['filtered', 'unfiltered']:
         returnwhich = 'filtered'
@@ -112,8 +118,9 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
     ALPHSIZE = len(alphabet) 
     DIMENSIONS = len(dimensional_filterlist)
     COMBINATIONS = ALPHSIZE ** DIMENSIONS
-    # set empty filter flag to True if ALL filterlists are empty
-    empty_filter = all(dim_fil == [] for dim_fil in dimensional_filterlist)
+    # set empty filter flag to True if ALL filterlists are empty AND max_duplicates < 1
+    empty_filter = all(dim_fil == [] for dim_fil in dimensional_filterlist) and \
+                    max_duplicates < 1
     # number of processes to spawn for multiprocessing
     tospawn = cpu_count()
     multi_factor = 1    # multi_factor for adjustment of chunksize chunksneeded
@@ -128,9 +135,13 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
         count += 1
 
     if verbose > 0: # status print
-        print(f'cartesian power filtered:\tmax possible combinations '
+        print(f'##########  CARTESIAN POWER FILTERED  ##########\n'
+                f'max possible combinations:\t'
                 f'{ALPHSIZE}^{DIMENSIONS} = {tf(COMBINATIONS)}\n'
-                f'{filtermode = }\t{returnwhich = }\n')
+                f'filtermode:\t\t\t{filtermode}\n'
+                f'max_duplicates:\t\t\t{max_duplicates}\n'
+                f'returnwhich:\t\t\t{returnwhich}\n\n'
+                f'FILTERS:')
         for i, filt in enumerate(dimensional_filterlist):
             print(f'dim: {i + 1}\t{filt}')
         if chunksneeded > 0:
@@ -148,13 +159,13 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
         if returnwhich == 'filtered' and empty_filter:
             yield list(cart_prod_gen)
         # no multiprocessing, but filters
-        elif returnwhich == 'filtered':
+        elif returnwhich == 'filtered' and not empty_filter:
             yield [comb for comb in cart_prod_gen if 
                                             ndimensional_filter(comb,
                                             dimensional_filterlist,
                                             max_duplicates,
                                             filtermode)]
-        elif returnwhich == 'unfiltered':
+        elif returnwhich == 'unfiltered' and not empty_filter:
             yield [comb for comb in cart_prod_gen if not
                                             ndimensional_filter(comb,
                                             dimensional_filterlist,
@@ -165,21 +176,24 @@ def cartesian_power_filtered(alphabet: Sequence[Any],
         # quickest route if multiprocessing and no filters. this true?
         if returnwhich == 'filtered' and empty_filter:
             yield from chunked_cart_prod_gen
-        # init partial function to work with imap
-        mp_filter_worker = partial(filter_worker,
-                                    filter=dimensional_filterlist,
-                                    max_duplicates=max_duplicates,
-                                    filtermode=filtermode)
-        # oh wow! how to this???
-        with get_context('spawn').Pool(processes=tospawn) as pool:
-            # multiprocessing and filters
-            yield from pool.imap(mp_filter_worker, chunked_cart_prod_gen)
+
+        elif returnwhich == 'filtered' and not empty_filter:
+            # init partial function to work with imap
+            mp_filter_worker = partial(filter_worker,
+                                        filter=dimensional_filterlist,
+                                        max_duplicates=max_duplicates,
+                                        filtermode=filtermode)
+            # oh wow! how to this???
+            with get_context('spawn').Pool(processes=tospawn) as pool:
+                # multiprocessing and filters
+                yield from pool.imap(mp_filter_worker, chunked_cart_prod_gen)
 
 def main():
     # i use main() only for testing purposes.
     toprod = ['ying young', 'sheesh', 'skrrr skrrrt', 'therapiegalaxie', 'kraterkosmos', 'narkosehelikopter', 'hitler']
     toprod = [0,1,2,3,4,5,6,7,8,9]
     toprod = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']
+    toprod = ['A', 'B', 'C']
     filter_list = [[0], [1], ['lol'], [(1, 2)], [], []]
     filter_list = [['ying young'], [], ['sheesh', 'skrrr skrrrt'], [],
                 ['therapiegalaxie', 'kraterkosmos', 'narkosehelikopter'], []]
@@ -188,15 +202,16 @@ def main():
     filter_list = [[], [], [], [], [], []]
     filter_list = [[], [], [], []]
     filter_list = [['A','B','C','D','E','F'],['A','B','C','D','E','F'],['A','B','C','D','E','F']]
+    filter_list = [[], [], []]
     
     cpf3 = cartesian_power_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
                                         filtermode='loose',
-                                        max_duplicates=1,
-                                        threshold=400_000,
+                                        max_duplicates=2,
+                                        result_size=400_000,
                                         verbose=2)
-    # make hexcodes from tuples
+    # make strings from tuples
     cpf3 = [chunk for chunk in cpf3]
     cpf3 = cpf3[0]
 
