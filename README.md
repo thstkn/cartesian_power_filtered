@@ -58,8 +58,7 @@ CCA CCB CCC
 
 
 - loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)``` <br/>
-this setting actually imitates functionality of ```itertools.permutations())``` <br/>
-expected result:
+	 - this setting actually imitates functionality of ```itertools.permutations())```, expected result:
 
 ```
 ABC ACB BAC BCA CAB CBA
