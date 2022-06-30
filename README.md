@@ -41,7 +41,7 @@ as (omitted showing original output 'list[tuple[Any]]' in following examples):
 ```
 [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'), ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
-<br/>
+<br/><br/>
 
 
 - loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
@@ -54,7 +54,7 @@ BBA BBB BBC BCA BCB BCC
 CAA CAB CAC CBA CBB CBC
 CCA CCB CCC
 ```
- <br/>
+ <br/><br/>
 
 
 - loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)``` <br/>
