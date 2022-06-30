@@ -1,7 +1,7 @@
 # Cartesian Power Filtered
 Makes cartesian product of any values of given dimensionality with various options for filtering the result.
 
-- This is a usefull tool to generate test data with a certain, concrete pattern.
+- This is a usefull tool to generate test data with a **_certain, concrete_** pattern.
 
 # Parameters and how to use
 Function for computing a cartesian power of all items in alphabet and filtering by maximum number of duplicated items within all items of the cartesian power specific filterlist. filterlist needs to be set with empty lists in dimensions which are not to be filtered to dictate dimensionality of combination correctly. Returns generator of lists of (un)filtered cartesian power with maxsize of threshold
@@ -41,7 +41,7 @@ as (omitted showing original output 'list[tuple[Any]]' in following examples):
 ```
 [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'A', 'C'), ('A', 'B', 'A'), ('A', 'B', 'B'), ('A', 'B', 'C')]
 ```
- <br/> <br/>
+<br/>
 
 
 loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')```
@@ -54,10 +54,10 @@ BBA BBB BBC BCA BCB BCC
 CAA CAB CAC CBA CBB CBC
 CCA CCB CCC
 ```
- <br/> <br/>
+ <br/>
 
 
-loose filter, max_duplicates = 1: cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)
+loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)``` <br/>
 this setting actually imitates functionality of itertools.permutations())
 expected result:
 
