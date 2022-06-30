@@ -38,7 +38,7 @@ with ```alphabet = ['A', 'B', 'C']``` and ```dimensional_filterlist = [ ['A'], [
  <br/> <br/>
 
 - strict filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'strict')``` <br/>
-- note how in every tuple the first dimensions item is always ```'A'``` and the second dimensions items are either ```'A'``` or ```'B'```, while the last dimensions items are any from ```alphabet```.
+- note how in every tuple the first dimensions item is always ```'A'``` and the second dimensions items are either ```'A'``` or ```'B'```, while the third dimensions items are any from ```alphabet```.
 omitting to show original output ```list[tuple]``` in following examples.
 
 ```
@@ -56,7 +56,7 @@ as :
 
 
 - loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')``` <br/>
-- note how here in in comparison to strict filtering above, items in any dimension can in principle be any element from ```alphabet```, as long as in dimension 1 is an ```'A'``` or in dimension 2 is either an ```'A'``` or a ```'B'```.
+- note how here in in comparison to strict filtering above, items in any dimension can in principle be any element from ```alphabet```, as long as in first dimension is an ```'A'``` or in second dimension is either an ```'A'``` or a ```'B'```, while the items in third dimension can be any from ```'alphabet'``` as above.
 
 ```
 AAA AAB AAC ABA ABB ABC
