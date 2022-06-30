@@ -14,13 +14,11 @@ from datetime import datetime
 from itertools import product
 from math import ceil
 # for type annotations:
-from typing import Any, Generator, Iterable
+from typing import Any, Generator, Iterable, Literal
 # superclasses for subclassing by user
 from collections.abc import Sequence
 from functools import partial
 from multiprocessing import cpu_count, get_context
-
-import sys
 
 
 def ndimensional_filter(combination: Sequence[Any],
@@ -32,10 +30,9 @@ def ndimensional_filter(combination: Sequence[Any],
     """
     if max_duplicates > 0:
         # returns true if no item has been found more than max_dup times in c
-        if not all(combination.count(item) <= max_duplicates
-                                for item in combination):
+        if not all(combination.count(item) <= max_duplicates for
+                                       item in combination):
             return False
-
     if filtermode == 'loose':
         # return TRUE if any combination[dimension] is in filter[dimension]
         # while dim_filter is not empty
@@ -49,13 +46,14 @@ def ndimensional_filter(combination: Sequence[Any],
                                     for dim, dim_filter in enumerate(filter))
                                         
 def filter_worker(chunk: Sequence[Sequence[Any]],
-                    filter: Sequence[Sequence[Any]], 
-                    max_duplicates: int,
-                    filtermode: str) \
+                  filter: Sequence[Sequence[Any]],
+                  max_duplicates: int,
+                  filtermode: str) \
                                                 -> list[Any]:
     """ Returns a filtered list of combinations.
     """
-    return [comb for comb in chunk if ndimensional_filter(comb,
+    return [combination for combination in chunk 
+                                    if ndimensional_filter(combination,
                                                             filter,
                                                             max_duplicates,
                                                             filtermode)]
@@ -63,44 +61,45 @@ def filter_worker(chunk: Sequence[Sequence[Any]],
 def chunked_gen(iterable: Iterable,
                 chunksize: int) \
                                 -> Generator[list[Any], None, None]:
-    """ generator to yield other iterable chunk wise as lists. Will it though?
+    """ generator to yield other iterable chunk wise as lists. needed for 
+        multiprocessing. Will it though?
     """
     yield from [list(iterable) for _ in range(chunksize)]
 
-def cartesian_product_filtered(alphabet: Sequence[Any],
-                                dimensional_filterlist: list[list[Any]],
-                                filtermode: str,
-                                returnwhich: str = 'filtered',
-                                max_duplicates: int = 0,
-                                threshold: int = 1_000,
-                                verbose: int = 0) \
+def cartesian_power_filtered(alphabet: Sequence[Any], 
+                               dimensional_filterlist: list[list[Any]],
+                               filtermode: Literal['loose', 'strict'],
+                               returnwhich: Literal['filtered', 'unfiltered'] \
+                                                                = 'filtered',
+                               max_duplicates: int = 0,
+                               threshold: int = 1_000,
+                               verbose: int = 0) \
                                             -> Generator[list[Any], None, None]:
-    """ Function for brute forcing a cartesian product of all items in alphabet
+    """ Function for brute forcing a cartesian power of all items in alphabet
     and filtering by maximum number of duplicated items within all items of the
-    cartesian product specific filterlist.
+    cartesian power specific filterlist.
     filterlist needs to be set with empty lists in dimensions which are not to 
     be filtered to dictate dimensionality of combination correctly.
-    * returns generator of lists of (un)filtered cartesian product with maxsize
-        threshold    
+        Returns generator of lists of (un)filtered cartesian power with
+    maxsize of threshold    
 
-    alphabet: list of entries to permute.
-    dimensional_filterlist: n-dimensional list of lists of entries to filter
-        out. format is Sequence[Sequence[Any]]
-        len(filterlist) = number of inner lists = number of dimensions dictates 
-        dimensionality of combination. if inner lists are empty, no filtering
-        will take place in that dimension. 
-    returnwhich: takes 'filtered' or 'unfiltered' as a string. if 'filtered',
+    * alphabet: Sequence of entries to permute.
+    * dimensional_filterlist: n-dimensional list of lists of entries to filter
+        out. len(filterlist) = number of dimensions, dictates dimensionality of 
+        combination. if inner lists are empty, no filtering will take place in 
+        that dimension. 
+    * returnwhich: takes 'filtered' or 'unfiltered' as a string. if 'filtered',
         only filtered combinations will be returned, otherwise unfiltered 
-    filtermode: takes 'strict' or 'loose' as a string. if 'strict',
+    * filtermode: takes 'strict' or 'loose' as a string. if 'strict',
         combinations which strictly contain only items which are set in
         dimensional_filterlist will be filtered. if 'loose', combinations which
         contain at least one item which is set in dimensional_filterlist in a
         given dimension of all dimensions are filtered.
-    max_duplicates: if set to a number > 0, combinations which contain more
+    * max_duplicates: if set to a number > 0, combinations which contain more
         than max_duplicates of the same item in a given combination will be
         filtered out. This is useful to set to reduce computation time.
-    threshold: determines chunksize of generated lists
-    verbose: takes values from 0-2 inclusively for different levels of verbosity
+    * threshold: determines chunksize of generated lists
+    * verbose: takes values from 0-2 inclusively
     """
 
     if returnwhich not in ['filtered', 'unfiltered']:
@@ -131,7 +130,7 @@ def cartesian_product_filtered(alphabet: Sequence[Any],
         count += 1
 
     if verbose > 0: # status print
-        print(f'cartesian product filtered:\tmax possible combinations '
+        print(f'cartesian power filtered:\tmax possible combinations '
                 f'{ALPHSIZE}^{DIMENSIONS} = {tf(COMBINATIONS)}\n'
                 f'{filtermode = }\t{returnwhich = }\n')
         for i, filt in enumerate(dimensional_filterlist):
@@ -140,7 +139,7 @@ def cartesian_product_filtered(alphabet: Sequence[Any],
             print(f'\nprocessing data using {chunksneeded} chunks of size '
                     f'{tf(chunksize)}. threshold: {tf(threshold)}')
 
-    # generator returning cartesian product
+    # generator returning cartesian power
     cart_prod_gen = product(alphabet, repeat=DIMENSIONS)
 
     if returnwhich == 'unfiltered' and empty_filter:
@@ -191,7 +190,7 @@ def main():
     filter_list = [[], [], [], []]
     filter_list = [['A','B','C','D','E','F'],['A','B','C','D','E','F'],['A','B','C','D','E','F']]
     
-    cpf3 = cartesian_product_filtered(alphabet=toprod,
+    cpf3 = cartesian_power_filtered(alphabet=toprod,
                                         dimensional_filterlist=filter_list,
                                         returnwhich='filtered',
                                         filtermode='loose',
