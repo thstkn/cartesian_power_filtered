@@ -1,12 +1,13 @@
 #%%
 
-### only needed for timing decorator ###
+##########################################
 if __name__ == '__main__':
     import sys
     sys.path.append('..')
-    from _usable_util import formatter
+    from _usable_util.formatting import formatter
     from _usable_util.read_write_files import write_to_file
-    from _usable_util.general_util_1 import thousands_formatter as tf
+    from _usable_util.formatting.thousands_formatter \
+            import thousands_formatter as tf
 ########################################
     
 from datetime import datetime
