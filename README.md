@@ -44,7 +44,7 @@ as (omitted showing original output 'list[tuple[Any]]' in following examples):
 <br/>
 
 
-loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')```
+- loose filter: ```cartesian_power_filtered(alphabet, dimensional_filterlist, filtermode = 'loose')```
 expected result:
 
 ```
@@ -57,8 +57,8 @@ CCA CCB CCC
  <br/>
 
 
-loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)``` <br/>
-this setting actually imitates functionality of itertools.permutations())
+- loose filter, max_duplicates = 1: ```cartesian_power_filtered(alphabet, dimensional_filterlist, 'loose', max_duplicates = 1)```
+this setting actually imitates functionality of ```itertools.permutations())``` <br/>
 expected result:
 
 ```
