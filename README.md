@@ -28,7 +28,7 @@ See examples below, where ```dimensional_filterlist[2] == []```.
 
 - ```filtermode```: takes 'strict' or 'loose' as a string. if 'strict', combinations which strictly contain only items which are set in dimensional_filterlist will be filtered. if 'loose', combinations which contain at least one item which is set in dimensional_filterlist in a given dimension of all dimensions are filtered.
 
-- ```max_duplicates```: if set to a number > 0, combinations which contain more than max_duplicates of the same item in a given combination will be filtered out. This is useful to set to reduce computation for huge datasets time as the check is applied before dimensional filtering.
+- ```max_duplicates```: if set to a number > 0, combinations which contain more than max_duplicates of the same item in a given combination will be filtered out. This is useful to set to reduce computation time for huge datasets as the check is applied before dimensional filtering.
 
 - ```returnwhich```: takes 'filtered' or 'unfiltered' as a string. if 'filtered', only filtered combinations will be returned, otherwise unfiltered
 
